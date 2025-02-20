@@ -27,7 +27,7 @@
         const db = getDatabase(app);
 
         // Funkce pro přidání zařízení do databáze
-        function addDevice() {
+        window.addDevice = function() {
             let name = document.getElementById("deviceName").value;
             if (!name) return;
             let id = "DEV" + Math.floor(Math.random() * 10000);
@@ -39,10 +39,10 @@
             }).catch((error) => {
                 console.error("Chyba při přidávání zařízení:", error);
             });
-        }
+        };
 
         // Funkce pro vykreslení zařízení
-        function renderDevices() {
+        window.renderDevices = function() {
             const list = document.getElementById("deviceList");
             list.innerHTML = "";
             const devicesRef = ref(db, 'devices');
@@ -70,7 +70,7 @@
         }
 
         // Funkce pro půjčení zařízení
-        function loanDevice(id) {
+        window.loanDevice = function(id) {
             let deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -90,7 +90,7 @@
         }
 
         // Funkce pro vrácení zařízení
-        function returnDevice(id) {
+        window.returnDevice = function(id) {
             let deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -106,59 +106,6 @@
 
         // Načítání zařízení při načtení stránky
         renderDevices();
-
-        // Skener a přidání funkčnosti pro půjčování zařízení
-        let devices = [];
-        let filteredDevices = [...devices];
-        let scanning = false;
-        let videoStream = null;
-
-        function startScanner() {
-            if (scanning) return;
-            scanning = true;
-            document.getElementById("scannerStatus").innerText = "Spouštím skener...";
-
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-                videoStream = stream;
-                let video = document.getElementById("video");
-                video.srcObject = stream;
-                let canvas = document.createElement("canvas");
-                let ctx = canvas.getContext("2d");
-                document.getElementById("scannerStatus").innerText = "Skenování...";
-
-                function scan() {
-                    if (!scanning) return;
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        let code = jsQR(imageData.data, canvas.width, canvas.height);
-                        if (code) {
-                            let device = devices.find(d => d.id === code.data);
-                            if (device) {
-                                filteredDevices = [device];
-                                renderDevices();
-                                stopScanner();
-                            }
-                        }
-                    }
-                    requestAnimationFrame(scan);
-                }
-                scan();
-            }).catch(err => {
-                document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
-                scanning = false;
-            });
-        }
-
-        function stopScanner() {
-            scanning = false;
-            document.getElementById("scannerStatus").innerText = "Skener zastaven.";
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
-        }
     </script>
     
     <style>
