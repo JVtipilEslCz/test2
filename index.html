@@ -83,39 +83,59 @@
         });
       };
 
-      // Funkce pro půjčení zařízení
+// Funkce pro půjčení zařízení
 window.loanDevice = function(id) {
     const deviceRef = ref(db, 'devices/' + id);
-    const loanedBy = prompt("Kdo půjčil?");
-    const loanedTo = prompt("Komu půjčil?");
-    const loanDate = new Date().toLocaleDateString("cs-CZ");
 
-    if (loanedBy && loanedTo) {
-        update(deviceRef, {
-            status: "Půjčeno",
-            loanedBy,
-            loanedTo,
-            loanDate
-        }).then(() => {
-            console.log("Zařízení bylo půjčeno");
-        }).catch((error) => {
-            console.error("Chyba při půjčování zařízení:", error);
-        });
-    }
+    // Nejprve načteme aktuální data zařízení, abychom si uchovali "name"
+    get(deviceRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const deviceData = snapshot.val();
+            const loanedBy = prompt("Kdo půjčil?");
+            const loanedTo = prompt("Komu půjčil?");
+            const loanDate = new Date().toLocaleDateString("cs-CZ");
+
+            if (loanedBy && loanedTo) {
+                update(deviceRef, {
+                    name: deviceData.name, // Zajistíme, že jméno zůstane
+                    status: "Půjčeno",
+                    loanedBy,
+                    loanedTo,
+                    loanDate
+                }).then(() => {
+                    console.log("Zařízení bylo půjčeno");
+                }).catch((error) => {
+                    console.error("Chyba při půjčování zařízení:", error);
+                });
+            }
+        }
+    }).catch((error) => {
+        console.error("Chyba při načítání zařízení:", error);
+    });
 };
 
 // Funkce pro vrácení zařízení
 window.returnDevice = function(id) {
     const deviceRef = ref(db, 'devices/' + id);
-    update(deviceRef, {
-        status: "Dostupné",
-        loanedBy: "",
-        loanedTo: "",
-        loanDate: ""
-    }).then(() => {
-        console.log("Zařízení bylo vráceno");
+
+    // Nejprve načteme aktuální data, aby se neztratilo "name"
+    get(deviceRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const deviceData = snapshot.val();
+            update(deviceRef, {
+                name: deviceData.name, // Zajistíme, že jméno zůstane
+                status: "Dostupné",
+                loanedBy: "",
+                loanedTo: "",
+                loanDate: ""
+            }).then(() => {
+                console.log("Zařízení bylo vráceno");
+            }).catch((error) => {
+                console.error("Chyba při vrácení zařízení:", error);
+            });
+        }
     }).catch((error) => {
-        console.error("Chyba při vrácení zařízení:", error);
+        console.error("Chyba při načítání zařízení:", error);
     });
 };
 
