@@ -50,33 +50,34 @@ window.addDevice = function() {
     });
 };
 
-        // Funkce pro vykreslení zařízení
-        window.renderDevices = function() {
-            const list = document.getElementById("deviceList");
-            list.innerHTML = "";
-            const devicesRef = ref(db, 'devices');
-            
-            // Použití onValue pro získání aktuálního stavu zařízení
-            onValue(devicesRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    snapshot.forEach(childSnapshot => {
-                        const device = childSnapshot.val();
-                        let li = document.createElement("li");
-                        li.innerHTML = `${device.name} (${device.id}) - ${device.status}` +
-                            `<br>Kdo půjčil: ${device.loanedBy || "-"}` +
-                            `<br>Komu půjčil: ${device.loanedTo || "-"}` +
-                            `<br>Datum zápůjčky: ${device.loanDate || "-"}` +
-                            `<br><button onclick="loanDevice('${device.id}')">Půjčit</button>` +
-                            `<button onclick="returnDevice('${device.id}')">Vrátit</button>` +
-                            `<div id="qrcode-${device.id}"></div>`;
-                        list.appendChild(li);
-                        new QRCode(document.getElementById(`qrcode-${device.id}`), device.id);
-                    });
-                } else {
-                    list.innerHTML = "Žádná zařízení nebyla nalezena.";
-                }
+// Funkce pro vykreslení všech zařízení
+window.renderDevices = function() {
+    const list = document.getElementById("deviceList");
+    list.innerHTML = "";  // Vymazání seznamu, než se vykreslí nový obsah
+
+    const devicesRef = ref(db, 'devices');
+
+    // Použití onValue pro získání všech zařízení v reálném čase
+    onValue(devicesRef, (snapshot) => {
+        if (snapshot.exists()) {
+            snapshot.forEach(childSnapshot => {
+                const device = childSnapshot.val();
+                let li = document.createElement("li");
+                li.innerHTML = `${device.name} (${childSnapshot.key}) - ${device.status}` +
+                    `<br>Kdo půjčil: ${device.loanedBy || "-"}` +
+                    `<br>Komu půjčil: ${device.loanedTo || "-"}` +
+                    `<br>Datum zápůjčky: ${device.loanDate || "-"}` +
+                    `<br><button onclick="loanDevice('${childSnapshot.key}')">Půjčit</button>` +
+                    `<button onclick="returnDevice('${childSnapshot.key}')">Vrátit</button>` +
+                    `<div id="qrcode-${childSnapshot.key}"></div>`;
+                list.appendChild(li);
+                new QRCode(document.getElementById(`qrcode-${childSnapshot.key}`), childSnapshot.key);
             });
+        } else {
+            list.innerHTML = "Žádná zařízení nebyla nalezena.";
         }
+    });
+};
 
         // Funkce pro půjčení zařízení
         window.loanDevice = function(id) {
