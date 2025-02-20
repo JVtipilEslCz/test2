@@ -4,122 +4,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evidenční systém půjčovny</title>
-    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js"></script>
-        <style>
-        body { font-family: Calibri, sans-serif; }
-    </style>
-</head>
-<body>
-    <h1>Evidenční systém půjčovny</h1>
     
-    <button onclick="startScanner()">Spustit skener</button>
-    <video id="video" width="300" height="200" autoplay></video>
-    <p id="scannerStatus"></p>
-    
-    <h2>Přidat nové zařízení</h2>
-    <input type="text" id="deviceName" placeholder="Název zařízení">
-    <button onclick="addDevice()">Přidat</button>
-    
-    <h2>Seznam zařízení</h2>
-    <ul id="deviceList"></ul>
-    
-    <script>
-        // Firebase konfigurace (nahraď svou vlastní konfigurací)
-  const firebaseConfig = {
-    apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
-    authDomain: "test2-c4d26.firebaseapp.com",
-    databaseURL: "https://test2-c4d26-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "test2-c4d26",
-    storageBucket: "test2-c4d26.firebasestorage.app",
-    messagingSenderId: "696702216457",
-    appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
-  };
-        
-  // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-        const db = firebase.database(app);
-        
-        let filteredDevices = [];
-        let scanning = false;
-        let videoStream = null;
+    <!-- Firebase SDK pro použití modulů -->
+    <script type="module">
+        // Importy pro Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
 
-        // Funkce pro přidání zařízení
+        // Firebase konfigurace
+        const firebaseConfig = {
+            apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
+            authDomain: "test2-c4d26.firebaseapp.com",
+            databaseURL: "https://test2-c4d26-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "test2-c4d26",
+            storageBucket: "test2-c4d26.firebasestorage.app",
+            messagingSenderId: "696702216457",
+            appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
+        };
+
+        // Inicializace Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Funkce pro přidání zařízení do databáze
         function addDevice() {
             let name = document.getElementById("deviceName").value;
             if (!name) return;
             let id = "DEV" + Math.floor(Math.random() * 10000);
-            let newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
-            let devicesRef = db.ref("devices");
-            devicesRef.push(newDevice).then(() => {
-                renderDevices();
-            });
+            const newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
+            const devicesRef = ref(db, 'devices/' + id);
+            set(devicesRef, newDevice);
+            renderDevices();
         }
 
-        // Funkce pro načtení a vykreslení zařízení
+        // Funkce pro vykreslení zařízení
         function renderDevices() {
-            let list = document.getElementById("deviceList");
+            const list = document.getElementById("deviceList");
             list.innerHTML = "";
-            db.ref("devices").once("value", snapshot => {
-                const devices = snapshot.val() || {};
-                filteredDevices = Object.values(devices);
-                filteredDevices.forEach(device => {
-                    let li = document.createElement("li");
-                    li.innerHTML = `${device.name} (${device.id}) - ${device.status}` +
-                        ` <br>Kdo půjčil: ${device.loanedBy || "-"}` +
-                        ` <br>Komu půjčil: ${device.loanedTo || "-"}` +
-                        ` <br>Datum zápůjčky: ${device.loanDate || "-"}` +
-                        ` <br><button onclick="loanDevice('${device.id}')">Půjčit</button>` +
-                        ` <button onclick="returnDevice('${device.id}')">Vrátit</button>` +
-                        ` <div id="qrcode-${device.id}"></div>`;
-                    list.appendChild(li);
-                    new QRCode(document.getElementById(`qrcode-${device.id}`), device.id);
-                });
+            const devicesRef = ref(db, 'devices');
+            get(devicesRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const device = childSnapshot.val();
+                        let li = document.createElement("li");
+                        li.innerHTML = `${device.name} (${device.id}) - ${device.status}`;
+                        list.appendChild(li);
+                    });
+                } else {
+                    console.log("No data available");
+                }
+            }).catch((error) => {
+                console.error(error);
             });
         }
 
-        // Funkce pro půjčení zařízení
+        // Načítání zařízení při načtení stránky
+        renderDevices();
+
+        // Skener a přidání funkčnosti pro půjčování zařízení
+        let devices = [];
+        let filteredDevices = [...devices];
+        let scanning = false;
+        let videoStream = null;
+
+        function addDeviceFromScanner(id, name) {
+            const newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
+            devices.push(newDevice);
+            renderDevices();
+        }
+
         function loanDevice(id) {
-            let loanedBy = prompt("Kdo půjčil?");
-            let loanedTo = prompt("Komu půjčil?");
-            let loanDate = new Date().toLocaleDateString("cs-CZ");
-            if (loanedBy && loanedTo) {
-                db.ref("devices").orderByChild("id").equalTo(id).once("value", snapshot => {
-                    const device = snapshot.val();
-                    if (device) {
-                        const deviceKey = Object.keys(device)[0];
-                        db.ref("devices/" + deviceKey).update({
-                            status: "Půjčeno",
-                            loanedBy: loanedBy,
-                            loanedTo: loanedTo,
-                            loanDate: loanDate
-                        }).then(() => {
-                            renderDevices();
-                        });
-                    }
-                });
+            let device = devices.find(d => d.id === id);
+            if (device) {
+                let loanedBy = prompt("Kdo půjčil?");
+                let loanedTo = prompt("Komu půjčil?");
+                let loanDate = new Date().toLocaleDateString("cs-CZ");
+                if (loanedBy && loanedTo) {
+                    device.status = "Půjčeno";
+                    device.loanedBy = loanedBy;
+                    device.loanedTo = loanedTo;
+                    device.loanDate = loanDate;
+                    renderDevices();
+                }
             }
         }
 
-        // Funkce pro vrácení zařízení
         function returnDevice(id) {
-            db.ref("devices").orderByChild("id").equalTo(id).once("value", snapshot => {
-                const device = snapshot.val();
-                if (device) {
-                    const deviceKey = Object.keys(device)[0];
-                    db.ref("devices/" + deviceKey).update({
-                        status: "Dostupné",
-                        loanedBy: "",
-                        loanedTo: "",
-                        loanDate: ""
-                    }).then(() => {
-                        renderDevices();
-                    });
-                }
-            });
+            let device = devices.find(d => d.id === id);
+            if (device) {
+                device.status = "Dostupné";
+                device.loanedBy = "";
+                device.loanedTo = "";
+                device.loanDate = "";
+                renderDevices();
+            }
         }
 
-        // Funkce pro spuštění skeneru
         function startScanner() {
             if (scanning) return;
             scanning = true;
@@ -142,7 +122,7 @@
                         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         let code = jsQR(imageData.data, canvas.width, canvas.height);
                         if (code) {
-                            let device = filteredDevices.find(d => d.id === code.data);
+                            let device = devices.find(d => d.id === code.data);
                             if (device) {
                                 filteredDevices = [device];
                                 renderDevices();
@@ -159,7 +139,6 @@
             });
         }
 
-        // Funkce pro zastavení skeneru
         function stopScanner() {
             scanning = false;
             document.getElementById("scannerStatus").innerText = "Skener zastaven.";
@@ -167,9 +146,24 @@
                 videoStream.getTracks().forEach(track => track.stop());
             }
         }
-
-        // Načíst zařízení při načtení stránky
-        renderDevices();
     </script>
+    
+    <style>
+        body { font-family: Calibri, sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Evidenční systém půjčovny</h1>
+    
+    <button onclick="startScanner()">Spustit skener</button>
+    <video id="video" width="300" height="200" autoplay></video>
+    <p id="scannerStatus"></p>
+    
+    <h2>Přidat nové zařízení</h2>
+    <input type="text" id="deviceName" placeholder="Název zařízení">
+    <button onclick="addDevice()">Přidat</button>
+    
+    <h2>Seznam zařízení</h2>
+    <ul id="deviceList"></ul>
 </body>
 </html>
