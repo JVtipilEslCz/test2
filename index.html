@@ -84,42 +84,40 @@
       };
 
       // Funkce pro půjčení zařízení
-      window.loanDevice = function(id) {
-        const deviceRef = ref(db, 'devices/' + id);
-        const loanedBy = prompt("Kdo půjčil?");
-        const loanedTo = prompt("Komu půjčil?");
-        const loanDate = new Date().toLocaleDateString("cs-CZ");
+window.loanDevice = function(id) {
+    const deviceRef = ref(db, 'devices/' + id);
+    const loanedBy = prompt("Kdo půjčil?");
+    const loanedTo = prompt("Komu půjčil?");
+    const loanDate = new Date().toLocaleDateString("cs-CZ");
 
-        if (loanedBy && loanedTo) {
-            set(deviceRef, {
-                status: "Půjčeno",
-                loanedBy,
-                loanedTo,
-                loanDate
-            }).then(() => {
-                console.log("Zařízení bylo půjčeno");
-                renderDevices();
-            }).catch((error) => {
-                console.error("Chyba při půjčování zařízení:", error);
-            });
-        }
-      };
-
-      // Funkce pro vrácení zařízení
-      window.returnDevice = function(id) {
-        const deviceRef = ref(db, 'devices/' + id);
-        set(deviceRef, {
-            status: "Dostupné",
-            loanedBy: "",
-            loanedTo: "",
-            loanDate: ""
+    if (loanedBy && loanedTo) {
+        update(deviceRef, {
+            status: "Půjčeno",
+            loanedBy,
+            loanedTo,
+            loanDate
         }).then(() => {
-            console.log("Zařízení bylo vráceno");
-            renderDevices();
+            console.log("Zařízení bylo půjčeno");
         }).catch((error) => {
-            console.error("Chyba při vrácení zařízení:", error);
+            console.error("Chyba při půjčování zařízení:", error);
         });
-      };
+    }
+};
+
+// Funkce pro vrácení zařízení
+window.returnDevice = function(id) {
+    const deviceRef = ref(db, 'devices/' + id);
+    update(deviceRef, {
+        status: "Dostupné",
+        loanedBy: "",
+        loanedTo: "",
+        loanDate: ""
+    }).then(() => {
+        console.log("Zařízení bylo vráceno");
+    }).catch((error) => {
+        console.error("Chyba při vrácení zařízení:", error);
+    });
+};
 
       // Spuštění vykreslování při načtení stránky
       renderDevices();
