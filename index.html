@@ -112,6 +112,7 @@
                             loanDate
                         }).then(() => {
                             console.log("Zařízení bylo půjčeno");
+                            renderDevices();
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -136,6 +137,7 @@
                         loanDate: ""
                     }).then(() => {
                         console.log("Zařízení bylo vráceno");
+                        renderDevices();
                     }).catch((error) => {
                         console.error("Chyba při vrácení zařízení:", error);
                     });
