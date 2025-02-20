@@ -6,7 +6,7 @@
     <title>Evidenční systém půjčovny</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js"></script>
+    <script https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js</script>
         <style>
         body { font-family: Calibri, sans-serif; }
     </style>
@@ -30,14 +30,15 @@
   const firebaseConfig = {
     apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
     authDomain: "test2-c4d26.firebaseapp.com",
+    databaseURL: "https://test2-c4d26-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "test2-c4d26",
     storageBucket: "test2-c4d26.firebasestorage.app",
     messagingSenderId: "696702216457",
-    appId: "1:696702216457:web:bd923ed765e3a1f1b88bd8"
+    appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
   };
         
   // Initialize Firebase
-  const app = initializeApp(firebaseConfig);;
+    const app = initializeApp(firebaseConfig);;
         
         let filteredDevices = [];
         let scanning = false;
