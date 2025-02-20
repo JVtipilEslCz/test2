@@ -9,7 +9,7 @@
     <script type="module">
         // Importy pro Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
-        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+        import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
 
         // Firebase konfigurace
         const firebaseConfig = {
@@ -33,8 +33,11 @@
             let id = "DEV" + Math.floor(Math.random() * 10000);
             const newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
             const devicesRef = ref(db, 'devices/' + id);
-            set(devicesRef, newDevice);
-            renderDevices();
+            set(devicesRef, newDevice).then(() => {
+                renderDevices(); // Aktualizace seznamu zařízení po přidání
+            }).catch((error) => {
+                console.error("Chyba při přidávání zařízení:", error);
+            });
         }
 
         // Funkce pro vykreslení zařízení
@@ -42,19 +45,61 @@
             const list = document.getElementById("deviceList");
             list.innerHTML = "";
             const devicesRef = ref(db, 'devices');
-            get(devicesRef).then((snapshot) => {
+            
+            // Použití onValue pro získání aktuálního stavu zařízení
+            onValue(devicesRef, (snapshot) => {
                 if (snapshot.exists()) {
                     snapshot.forEach(childSnapshot => {
                         const device = childSnapshot.val();
                         let li = document.createElement("li");
-                        li.innerHTML = `${device.name} (${device.id}) - ${device.status}`;
+                        li.innerHTML = `${device.name} (${device.id}) - ${device.status}` +
+                            `<br>Kdo půjčil: ${device.loanedBy || "-"}` +
+                            `<br>Komu půjčil: ${device.loanedTo || "-"}` +
+                            `<br>Datum zápůjčky: ${device.loanDate || "-"}` +
+                            `<br><button onclick="loanDevice('${device.id}')">Půjčit</button>` +
+                            `<button onclick="returnDevice('${device.id}')">Vrátit</button>` +
+                            `<div id="qrcode-${device.id}"></div>`;
                         list.appendChild(li);
+                        new QRCode(document.getElementById(`qrcode-${device.id}`), device.id);
                     });
                 } else {
-                    console.log("No data available");
+                    list.innerHTML = "Žádná zařízení nebyla nalezena.";
                 }
-            }).catch((error) => {
-                console.error(error);
+            });
+        }
+
+        // Funkce pro půjčení zařízení
+        function loanDevice(id) {
+            let deviceRef = ref(db, 'devices/' + id);
+            get(deviceRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let device = snapshot.val();
+                    let loanedBy = prompt("Kdo půjčil?");
+                    let loanedTo = prompt("Komu půjčil?");
+                    let loanDate = new Date().toLocaleDateString("cs-CZ");
+                    if (loanedBy && loanedTo) {
+                        device.status = "Půjčeno";
+                        device.loanedBy = loanedBy;
+                        device.loanedTo = loanedTo;
+                        device.loanDate = loanDate;
+                        set(deviceRef, device); // Aktualizace zařízení v databázi
+                    }
+                }
+            });
+        }
+
+        // Funkce pro vrácení zařízení
+        function returnDevice(id) {
+            let deviceRef = ref(db, 'devices/' + id);
+            get(deviceRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let device = snapshot.val();
+                    device.status = "Dostupné";
+                    device.loanedBy = "";
+                    device.loanedTo = "";
+                    device.loanDate = "";
+                    set(deviceRef, device); // Aktualizace zařízení v databázi
+                }
             });
         }
 
@@ -66,39 +111,6 @@
         let filteredDevices = [...devices];
         let scanning = false;
         let videoStream = null;
-
-        function addDeviceFromScanner(id, name) {
-            const newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
-            devices.push(newDevice);
-            renderDevices();
-        }
-
-        function loanDevice(id) {
-            let device = devices.find(d => d.id === id);
-            if (device) {
-                let loanedBy = prompt("Kdo půjčil?");
-                let loanedTo = prompt("Komu půjčil?");
-                let loanDate = new Date().toLocaleDateString("cs-CZ");
-                if (loanedBy && loanedTo) {
-                    device.status = "Půjčeno";
-                    device.loanedBy = loanedBy;
-                    device.loanedTo = loanedTo;
-                    device.loanDate = loanDate;
-                    renderDevices();
-                }
-            }
-        }
-
-        function returnDevice(id) {
-            let device = devices.find(d => d.id === id);
-            if (device) {
-                device.status = "Dostupné";
-                device.loanedBy = "";
-                device.loanedTo = "";
-                device.loanDate = "";
-                renderDevices();
-            }
-        }
 
         function startScanner() {
             if (scanning) return;
