@@ -27,19 +27,28 @@
         const db = getDatabase(app);
 
         // Funkce pro přidání zařízení do databáze
-        window.addDevice = function() {
-            let name = document.getElementById("deviceName").value;
-            if (!name) return;
-            let id = "DEV" + Math.floor(Math.random() * 10000);
-            const newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
-            const devicesRef = ref(db, 'devices/' + id);
-            set(devicesRef, newDevice).then(() => {
-                console.log("Zařízení bylo přidáno");
-                renderDevices(); // Aktualizace seznamu zařízení po přidání
-            }).catch((error) => {
-                console.error("Chyba při přidávání zařízení:", error);
-            });
-        };
+window.addDevice = function() {
+    let name = document.getElementById("deviceName").value;
+    if (!name) return;
+    
+    const newDevice = {
+        name,
+        status: "Dostupné",
+        loanedBy: "",
+        loanedTo: "",
+        loanDate: ""
+    };
+
+    // Místo set() použijeme push() pro přidání nového zařízení
+    const devicesRef = ref(db, 'devices');
+    const newDeviceRef = push(devicesRef); // Generuje unikátní ID pro každé zařízení
+    set(newDeviceRef, newDevice).then(() => {
+        console.log("Zařízení bylo přidáno");
+        renderDevices(); // Aktualizace seznamu zařízení po přidání
+    }).catch((error) => {
+        console.error("Chyba při přidávání zařízení:", error);
+    });
+};
 
         // Funkce pro vykreslení zařízení
         window.renderDevices = function() {
