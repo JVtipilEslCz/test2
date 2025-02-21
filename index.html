@@ -98,50 +98,52 @@ button.return { background-color: #dc3545; color: white; }
         };
 
         // Funkce pro vykreslení seznamu zařízení
-        function renderDevices() {
-            const list = document.getElementById("deviceList");
-            list.innerHTML = "";
-            const devicesRef = ref(db, 'devices/');
-            get(devicesRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const devices = snapshot.val();
-                    Object.keys(devices).forEach((key) => {
-                        const device = devices[key];
-                        let li = document.createElement("li");
+function renderDevices() {
+    const list = document.getElementById("deviceList");
+    list.innerHTML = "";
+    const devicesRef = ref(db, 'devices/');
+    get(devicesRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const devices = snapshot.val();
+            Object.keys(devices).forEach((key) => {
+                const device = devices[key];
+                let li = document.createElement("li");
 
-                        // Přiřazení třídy pro stav zařízení
-                        let statusClass = device.status === "Dostupné" ? "available" : "loaned";
-                        let statusText = device.status === "Dostupné" ? "Dostupné" : "Půjčeno";
+                // Přiřazení třídy pro stav zařízení
+                let statusClass = device.status === "Dostupné" ? "available" : "loaned";
+                let statusText = device.status === "Dostupné" ? "Dostupné" : "Půjčeno";
 
-                        li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
-                            <div>
-                                <span class="device-name">${device.name}</span>
-                                <span class="device-status ${statusClass}">${statusText}</span>
-                                <br>
-                                <span class="device-id">ID: ${key}</span> 
-                                <br>
-                                Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                Komu půjčil: ${device.loanedTo || "-"}<br>
-                                Datum zápůjčky: ${device.loanDate || "-"}<br>       
-                                <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
-                                <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
-                            </div>
-                            <div id="qrcode-${key}"></div>
-                        </div>`;
-                        list.appendChild(li);
-                        new QRCode(document.getElementById(`qrcode-${key}`), {
-                            text: key,
-                            width: 100,   // Šířka QR kódu v pixelech
-                            height: 100    // Výška QR kódu v pixelech
-                            });
-                    });
-                } else {
-                    console.log("Žádná data k zobrazení.");
-                }
-            }).catch((error) => {
-                console.error("Chyba při načítání zařízení:", error);
+                li.setAttribute("data-device-id", key); // Přiřazení ID zařízení pro zvýraznění
+
+                li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
+                    <div>
+                        <span class="device-name">${device.name}</span>
+                        <span class="device-status ${statusClass}">${statusText}</span>
+                        <br>
+                        <span class="device-id">ID: ${key}</span> 
+                        <br>
+                        Kdo půjčil: ${device.loanedBy || "-"}<br>
+                        Komu půjčil: ${device.loanedTo || "-"}<br>
+                        Datum zápůjčky: ${device.loanDate || "-"}<br>       
+                        <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
+                        <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+                    </div>
+                    <div id="qrcode-${key}"></div>
+                </div>`;
+                list.appendChild(li);
+                new QRCode(document.getElementById(`qrcode-${key}`), {
+                    text: key,
+                    width: 100,   // Šířka QR kódu v pixelech
+                    height: 100    // Výška QR kódu v pixelech
+                });
             });
+        } else {
+            console.log("Žádná data k zobrazení.");
         }
+    }).catch((error) => {
+        console.error("Chyba při načítání zařízení:", error);
+    });
+}
         
         //  Funkce pro zvýraznění zařízení
         function highlightDevice(deviceId) {
