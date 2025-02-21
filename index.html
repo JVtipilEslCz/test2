@@ -160,7 +160,7 @@
             });
         };
 
-        // Funkce pro spuštění skeneru (nebylo měněno)
+        // Funkce pro spuštění skeneru
         window.startScanner = function() {
             if (scanning) return;
             scanning = true;
@@ -183,16 +183,13 @@
                         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         let code = jsQR(imageData.data, canvas.width, canvas.height);
                         if (code) {
-                            let device = devices.find(d => d.id === code.data);
-                            if (device) {
-                                filteredDevices = [device];
-                                renderDevices();
-                                stopScanner();
-                            }
+                            highlightDevice(code.data); // Zavoláme zvýraznění zařízení
+                            stopScanner();
                         }
                     }
                     requestAnimationFrame(scan);
                 }
+
                 scan();
             }).catch(err => {
                 document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
