@@ -173,8 +173,6 @@ function renderDevices() {
                 window.scrollTo(0, savedPosition); // Posun na uloženou pozici
             }
         }
-// Zavoláme tuto funkci při načítání stránky
-window.onload = restoreScrollPosition;
         
         // Funkce pro půjčení zařízení
         window.loanDevice = function(id) {
@@ -196,8 +194,7 @@ window.onload = restoreScrollPosition;
                             loanDate
                         }).then(() => {
                             console.log("Zařízení bylo půjčeno");
-                            renderDevices();
-                            window.onload = restoreScrollPosition;
+                            renderDevices();                            
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -224,7 +221,6 @@ window.onload = restoreScrollPosition;
                     }).then(() => {
                         console.log("Zařízení bylo vráceno");
                         renderDevices();
-                        window.onload = restoreScrollPosition;
                     }).catch((error) => {
                         console.error("Chyba při vrácení zařízení:", error);
                     });
@@ -293,8 +289,10 @@ window.onload = restoreScrollPosition;
         };
         
         // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
-        renderDevices();
-        window.onload = restoreScrollPosition;
+window.onload = function() {
+    restoreScrollPosition();  // Obnovení pozice
+    renderDevices();  // Vykreslení seznamu zařízení
+};
 
     </script>
 </body>
