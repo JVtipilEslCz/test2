@@ -183,14 +183,8 @@
             scanning = true;
             document.getElementById("scannerStatus").innerText = "Spouštím skener...";
 
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    document.getElementById("video").srcObject = stream;
-                })
-                .catch(error => {
-                    alert("Chyba kamery: " + error.message);
-                });
-                    videoStream = stream;
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+                videoStream = stream;
                 let video = document.getElementById("video");
                 video.srcObject = stream;
                 let canvas = document.createElement("canvas");
