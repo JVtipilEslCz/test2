@@ -162,9 +162,22 @@ function renderDevices() {
                 el.classList.remove("highlight");
             });
         }
-        
+        // Funkce pro uložení pozice
+        function saveScrollPosition() {
+            sessionStorage.setItem("scrollPosition", window.scrollY);
+        }
+
+        // Funkce pro obnovení pozice
+        function restoreScrollPosition() {
+            const savedPosition = sessionStorage.getItem("scrollPosition");
+            if (savedPosition) {
+                window.scrollTo(0, savedPosition); // Posun na uloženou pozici
+            }
+        }
+       
         // Funkce pro půjčení zařízení
         window.loanDevice = function(id) {
+            saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -183,6 +196,7 @@ function renderDevices() {
                         }).then(() => {
                             console.log("Zařízení bylo půjčeno");
                             renderDevices();
+                            window.onload = restoreScrollPosition;
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -195,6 +209,7 @@ function renderDevices() {
 
         // Funkce pro vrácení zařízení
         window.returnDevice = function(id) {
+             saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -208,6 +223,7 @@ function renderDevices() {
                     }).then(() => {
                         console.log("Zařízení bylo vráceno");
                         renderDevices();
+                        window.onload = restoreScrollPosition;
                     }).catch((error) => {
                         console.error("Chyba při vrácení zařízení:", error);
                     });
