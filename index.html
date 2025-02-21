@@ -244,25 +244,31 @@
             renderDevices();
         };
 // Uložení pozice při odchodu ze stránky
-    window.renderDevices = renderDevices; 
-        window.addEventListener("beforeunload", function() {
+window.addEventListener("beforeunload", function() {
     sessionStorage.setItem("scrollPosition", window.scrollY);
 });
 
-// Obnovení pozice po načtení stránky
-window.addEventListener("load", function() {
-    // Zajistíme, že renderDevices je globálně dostupné
+// Počkejme, až se Firebase načte a teprve poté načteme zařízení
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Dokument načten, inicializace Firebase...");
 
-
-    renderDevices();  // Nejprve načteme seznam zařízení
-
+    // Ujistíme se, že Firebase je hotové, než spustíme renderování
     setTimeout(() => {
-        const savedPosition = sessionStorage.getItem("scrollPosition");
-        if (savedPosition !== null) {
-            window.scrollTo(0, parseInt(savedPosition, 10)); // Obnovíme posun
-        }
-    }, 100); // Krátká prodleva pro správné načtení
+        console.log("Volám renderDevices...");
+        renderDevices();
+
+        // Obnovíme pozici posunu po načtení seznamu zařízení
+        setTimeout(() => {
+            const savedPosition = sessionStorage.getItem("scrollPosition");
+            if (savedPosition !== null) {
+                console.log("Obnovuji pozici:", savedPosition);
+                window.scrollTo(0, parseInt(savedPosition, 10));
+            }
+        }, 500); // Počkáme na načtení seznamu
+
+    }, 1000); // Krátká prodleva pro inicializaci Firebase
 });
+
     </script>
 </body>
 </html>
