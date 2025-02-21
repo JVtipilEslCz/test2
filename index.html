@@ -50,13 +50,22 @@
     <button onclick="startScanner()">Spustit skener</button>
     <video id="video" width="300" height="200" autoplay></video>
     <p id="scannerStatus"></p>
-    
-    <h2>Přidat nové zařízení</h2>
-    <input type="text" id="deviceName" placeholder="Název zařízení">
-    <button onclick="addDevice()">Přidat</button>
-    
-    <h2>Seznam zařízení</h2>
-    <ul id="deviceList"></ul>
+
+    <div class="container">
+        <div class="device-list">
+            <h2>Přidat nové zařízení</h2>
+            <input type="text" id="deviceName" placeholder="Název zařízení">
+            <button onclick="addDevice()">Přidat</button>
+
+            <h2>Seznam zařízení</h2>
+            <ul id="deviceList"></ul>
+        </div>
+
+        <div class="qr-code">
+            <h2>QR Kódy</h2>
+            <div id="qrcode-container"></div>
+        </div>
+    </div>
 
     <!-- Import Firebase SDKs -->
     <script type="module">
