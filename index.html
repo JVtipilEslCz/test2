@@ -11,8 +11,7 @@
         .highlight {
             background-color: yellow; /* Podbarvení */
             transition: background-color 0.5s ease-in-out;
-            }
-
+        }
     </style>
 </head>
 <body>
@@ -80,15 +79,23 @@
                     Object.keys(devices).forEach((key) => {
                         const device = devices[key];
                         let li = document.createElement("li");
-                        li.innerHTML = `${device.name} (${key}) - ${device.status}` +
-                            ` <br>Kdo půjčil: ${device.loanedBy || "-"}` +
-                            ` <br>Komu půjčil: ${device.loanedTo || "-"}` +
-                            ` <br>Datum zápůjčky: ${device.loanDate || "-"}` +
-                            ` <br><button onclick="loanDevice('${key}')">Půjčit</button>` +
-                            ` <button onclick="returnDevice('${key}')">Vrátit</button>` +
-                            ` <div id="qrcode-${key}"></div>`;
+                        li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
+                            <div>
+                                ${device.name} (${key}) - ${device.status}<br>
+                                Kdo půjčil: ${device.loanedBy || "-"}<br>
+                                Komu půjčil: ${device.loanedTo || "-"}<br>
+                                Datum zápůjčky: ${device.loanDate || "-"}<br>
+                                <button onclick="loanDevice('${key}')">Půjčit</button>
+                                <button onclick="returnDevice('${key}')">Vrátit</button>
+                            </div>
+                            <div id="qrcode-${key}"></div>
+                         </div>`;
                         list.appendChild(li);
-                        new QRCode(document.getElementById(`qrcode-${key}`), key);
+                        new QRCode(document.getElementById(`qrcode-${key}`), {
+                            text: key,
+                            width: 80,   // Šířka QR kódu v pixelech
+                            height: 80    // Výška QR kódu v pixelech
+                        });                      
                     });
                 } else {
                     console.log("Žádná data k zobrazení.");
