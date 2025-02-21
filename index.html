@@ -116,6 +116,15 @@
                             height: 100
                         });
                     });
+            // Obnovíme scroll pozici po vykreslení zařízení
+            setTimeout(() => {
+                const savedPosition = sessionStorage.getItem("scrollPosition");
+                if (savedPosition !== null) {
+                    console.log("Obnovuji pozici:", savedPosition);
+                    window.scrollTo(0, parseInt(savedPosition, 10));
+                }
+            }, 100); // Počkáme na dokončení vykreslení
+                    
                 } else {
                     console.log("Žádná data k zobrazení.");
                 }
