@@ -11,7 +11,8 @@
         .highlight {
             background-color: yellow; /* Podbarvení */
             transition: background-color 0.5s ease-in-out;
-        }
+            }
+
     </style>
 </head>
 <body>
@@ -79,24 +80,15 @@
                     Object.keys(devices).forEach((key) => {
                         const device = devices[key];
                         let li = document.createElement("li");
-                            li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;" data-device-id="${key}">
-                                <div>
-                                    ${device.name} (${key}) - ${device.status}<br>
-                                    Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                    Komu půjčil: ${device.loanedTo || "-"}<br>
-                                    Datum zápůjčky: ${device.loanDate || "-"}<br>
-                                    <button onclick="loanDevice('${key}'); removeHighlight();">Půjčit</button>
-                                    <button onclick="returnDevice('${key}'); removeHighlight();">Vrátit</button>
-                                </div>
-                                <div id="qrcode-${key}"></div>
-                            </div>`;
-
+                        li.innerHTML = `${device.name} (${key}) - ${device.status}` +
+                            ` <br>Kdo půjčil: ${device.loanedBy || "-"}` +
+                            ` <br>Komu půjčil: ${device.loanedTo || "-"}` +
+                            ` <br>Datum zápůjčky: ${device.loanDate || "-"}` +
+                            ` <br><button onclick="loanDevice('${key}')">Půjčit</button>` +
+                            ` <button onclick="returnDevice('${key}')">Vrátit</button>` +
+                            ` <div id="qrcode-${key}"></div>`;
                         list.appendChild(li);
-                        new QRCode(document.getElementById(`qrcode-${key}`), {
-                            text: key,
-                            width: 80,   // Šířka QR kódu v pixelech
-                            height: 80    // Výška QR kódu v pixelech
-                        });                      
+                        new QRCode(document.getElementById(`qrcode-${key}`), key);
                     });
                 } else {
                     console.log("Žádná data k zobrazení.");
@@ -159,21 +151,7 @@
                 console.error("Chyba při načítání zařízení:", error);
             });
         };
-function highlightDevice(deviceId) {
-    removeHighlight(); // Nejprve odstraníme zvýraznění ze všech zařízení
 
-    const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
-    if (deviceElement) {
-        deviceElement.classList.add("highlight"); // Přidáme zvýraznění
-        deviceElement.scrollIntoView({ behavior: "smooth", block: "center" }); // Posun na zařízení
-    }
-}
-function removeHighlight() {
-    document.querySelectorAll(".highlight").forEach(el => {
-        el.classList.remove("highlight");
-    });
-}
-        
         // Funkce pro spuštění skeneru (nebylo měněno)
         window.startScanner = function() {
             if (scanning) return;
@@ -197,13 +175,16 @@ function removeHighlight() {
                         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         let code = jsQR(imageData.data, canvas.width, canvas.height);
                         if (code) {
-                            highlightDevice(code.data); // Zavoláme zvýraznění zařízení
-                            stopScanner();
+                            let device = devices.find(d => d.id === code.data);
+                            if (device) {
+                                filteredDevices = [device];
+                                renderDevices();
+                                stopScanner();
+                            }
                         }
                     }
                     requestAnimationFrame(scan);
                 }
-             }
                 scan();
             }).catch(err => {
                 document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
