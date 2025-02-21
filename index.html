@@ -208,6 +208,7 @@
         
                        if (code) {
                            console.log("Nalezen QR kód:", code.data);
+                           document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
                            
                            //  ZASTAVENÍ KAMERY A SKENERU
                            scanning = false; // Skener vypneme
@@ -236,7 +237,7 @@
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
             }
-            console.log("Skener zastaven.");
+            document.getElementById("scannerStatus").innerText = "Skener zastaven.";
         };
         
         // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
