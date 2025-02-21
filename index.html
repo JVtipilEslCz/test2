@@ -20,6 +20,8 @@
     <button onclick="startScanner()">Spustit skener</button>
     <video id="video" width="300" height="200" autoplay></video>
     <p id="scannerStatus"></p>
+
+    <button onclick="stopScanner()">Zastavit skener</button>
     
     <h2>Přidat nové zařízení</h2>
     <input type="text" id="deviceName" placeholder="Název zařízení">
@@ -196,20 +198,31 @@
                 document.getElementById("scannerStatus").innerText = "Skenování...";
 
                 function scan() {
-                    if (!scanning) return;
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        let code = jsQR(imageData.data, canvas.width, canvas.height);
-                        if (code) {
-                            highlightDevice(code.data); // Zavoláme zvýraznění zařízení
-                            stopScanner();
-                        }
-                    }
-                    requestAnimationFrame(scan);
-                }
+                   if (!scanning) return;
+                   if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                       canvas.width = video.videoWidth;
+                       canvas.height = video.videoHeight;
+                       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                       let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                       let code = jsQR(imageData.data, canvas.width, canvas.height);
+        
+                       if (code) {
+                           console.log("Nalezen QR kód:", code.data);
+                           
+                           //  ZASTAVENÍ KAMERY A SKENERU
+                           scanning = false; // Skener vypneme
+                           if (videoStream) {
+                               videoStream.getTracks().forEach(track => track.stop()); // Vypneme kameru
+                           }
+
+                           //  Zobrazíme zařízení v seznamu (zvýraznění)
+                           highlightDevice(code.data);
+                       }
+                   }
+                   if (scanning) {
+                       requestAnimationFrame(scan); // Pokračujeme jen, pokud scanning = true
+                   }
+               }
 
                 scan();
             }).catch(err => {
@@ -217,7 +230,15 @@
                 scanning = false;
             });
         };
-
+        // funkce pro zastavení skeneru
+        window.stopScanner = function() {
+            scanning = false;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            console.log("Skener zastaven.");
+        };
+        
         // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
         renderDevices();
 
