@@ -166,7 +166,6 @@ function renderDevices() {
         function saveScrollPosition() {
             sessionStorage.setItem("scrollPosition", window.scrollY);
         }
-
         // Funkce pro obnovení pozice
         function restoreScrollPosition() {
             const savedPosition = sessionStorage.getItem("scrollPosition");
@@ -174,7 +173,9 @@ function renderDevices() {
                 window.scrollTo(0, savedPosition); // Posun na uloženou pozici
             }
         }
-       
+// Zavoláme tuto funkci při načítání stránky
+window.onload = restoreScrollPosition;
+        
         // Funkce pro půjčení zařízení
         window.loanDevice = function(id) {
             saveScrollPosition();
@@ -293,6 +294,7 @@ function renderDevices() {
         
         // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
         renderDevices();
+        window.onload = restoreScrollPosition;
 
     </script>
 </body>
