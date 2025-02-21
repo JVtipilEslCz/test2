@@ -138,6 +138,18 @@
                 el.classList.remove("highlight");
             });
         }
+
+        function saveScrollPosition() {
+            sessionStorage.setItem("scrollPosition", window.scrollY);
+        }
+
+        function restoreScrollPosition() {
+            const savedPosition = sessionStorage.getItem("scrollPosition");
+            if (savedPosition) {
+                window.scrollTo(0, savedPosition);
+            }
+        }
+
         window.loanDevice = function(id) {
             saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
@@ -245,22 +257,10 @@
             renderDevices();
         };
 
-// Uložení pozice při odchodu ze stránky
-window.addEventListener("beforeunload", function() {
-    sessionStorage.setItem("scrollPosition", window.scrollY);
-});
-
-// Obnovení pozice po načtení stránky
-window.addEventListener("load", function() {
-    renderDevices();  // Nejprve načteme seznam zařízení
-    setTimeout(() => {
-        const savedPosition = sessionStorage.getItem("scrollPosition");
-        if (savedPosition !== null) {
-            window.scrollTo(0, parseInt(savedPosition, 10)); // Obnovíme posun
-        }
-    }, 100); // Krátká prodleva pro správné načtení
-});
-
+        window.onload = function() {
+            restoreScrollPosition();
+            renderDevices();
+        };
     </script>
 </body>
 </html>
