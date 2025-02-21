@@ -13,26 +13,16 @@
             background-color: yellow; /* Podbarvení */
             transition: background-color 0.5s ease-in-out;
         }
-/* Tučný název zařízení */
-.device-name {font-weight: bold; }
-
-/* Zrušení teček v seznamu a posunutí názvu */
-#deviceList {list-style-type: none; padding-left: 0; }
-#deviceList li {padding-left: 10px; }
-
-/* Zobrazování ID pod názvem */
-.device-id {font-size: 0.9em; color: #777; }
-
-/* Barevná tlačítka */
-button {width: 120px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
-button.loan { background-color: #28a745; color: white; }
-button.return { background-color: #dc3545; color: white; }
-
-/* Barevné texty pro stav zařízení */
-.device-status { font-weight: bold; }
-.device-status.available { color: green; }
-.device-status.loaned { color: red; }
-
+        .device-name {font-weight: bold; }
+        #deviceList {list-style-type: none; padding-left: 0; }
+        #deviceList li {padding-left: 10px; }
+        .device-id {font-size: 0.9em; color: #777; }
+        button {width: 120px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
+        button.loan { background-color: #28a745; color: white; }
+        button.return { background-color: #dc3545; color: white; }
+        .device-status { font-weight: bold; }
+        .device-status.available { color: green; }
+        .device-status.loaned { color: red; }
     </style>
 </head>
 <body>
@@ -43,42 +33,33 @@ button.return { background-color: #dc3545; color: white; }
     <video id="video" width="300" height="200" autoplay></video>
     <p id="scannerStatus"></p>
 
-
-    
     <h2>Přidat nové zařízení</h2>
     <input type="text" id="deviceName" placeholder="Název zařízení">
     <button onclick="addDevice()">Přidat</button>
     
     <h2>Seznam zařízení</h2>
     <ul id="deviceList"></ul>
-<span class="device-status ${statusClass}">${statusText}</span>
-    
-    <!-- Import Firebase SDKs -->
+
     <script type="module">
-        // Importování potřebných funkcí z Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
         import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
 
-        // Firebase konfigurace (nahraď svou vlastní konfigurací)
         const firebaseConfig = {
-            apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",  // Tvůj vlastní apiKey
-            authDomain: "test2-c4d26.firebaseapp.com",  // Tvůj vlastní authDomain
-            databaseURL: "https://test2-c4d26-default-rtdb.europe-west1.firebasedatabase.app",  // Tvůj vlastní databaseURL
+            apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
+            authDomain: "test2-c4d26.firebaseapp.com",
+            databaseURL: "https://test2-c4d26-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "test2-c4d26",
             storageBucket: "test2-c4d26.firebasestorage.app",
             messagingSenderId: "696702216457",
             appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
         };
 
-        // Inicializace Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Definujeme proměnnou scanning
-        let scanning = false; 
-        let videoStream = null; 
-        
-        // Funkce pro přidání zařízení
+        let scanning = false;
+        let videoStream = null;
+
         window.addDevice = function() {
             const name = document.getElementById("deviceName").value;
             if (!name) return;
@@ -91,90 +72,84 @@ button.return { background-color: #dc3545; color: white; }
                 loanDate: ""
             }).then(() => {
                 console.log("Zařízení bylo přidáno");
-                renderDevices(); // Překreslí seznam zařízení
+                renderDevices();
             }).catch((error) => {
                 console.error("Chyba při přidávání zařízení:", error);
             });
         };
 
-        // Funkce pro vykreslení seznamu zařízení
-function renderDevices() {
-    const list = document.getElementById("deviceList");
-    list.innerHTML = "";
-    const devicesRef = ref(db, 'devices/');
-    get(devicesRef).then((snapshot) => {
-        if (snapshot.exists()) {
-            const devices = snapshot.val();
-            Object.keys(devices).forEach((key) => {
-                const device = devices[key];
-                let li = document.createElement("li");
+        function renderDevices() {
+            const list = document.getElementById("deviceList");
+            list.innerHTML = "";
+            const devicesRef = ref(db, 'devices/');
+            get(devicesRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const devices = snapshot.val();
+                    Object.keys(devices).forEach((key) => {
+                        const device = devices[key];
+                        let li = document.createElement("li");
 
-                // Přiřazení třídy pro stav zařízení
-                let statusClass = device.status === "Dostupné" ? "available" : "loaned";
-                let statusText = device.status === "Dostupné" ? "Dostupné" : "Půjčeno";
+                        let statusClass = device.status === "Dostupné" ? "available" : "loaned";
+                        let statusText = device.status === "Dostupné" ? "Dostupné" : "Půjčeno";
 
-                li.setAttribute("data-device-id", key); // Přiřazení ID zařízení pro zvýraznění
+                        li.setAttribute("data-device-id", key);
 
-                li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
-                    <div>
-                        <span class="device-name">${device.name}</span>
-                        <span class="device-status ${statusClass}">${statusText}</span>
-                        <br>
-                        <span class="device-id">ID: ${key}</span> 
-                        <br>
-                        Kdo půjčil: ${device.loanedBy || "-"}<br>
-                        Komu půjčil: ${device.loanedTo || "-"}<br>
-                        Datum zápůjčky: ${device.loanDate || "-"}<br>       
-                        <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
-                        <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
-                    </div>
-                    <div id="qrcode-${key}"></div>
-                </div>`;
-                list.appendChild(li);
-                new QRCode(document.getElementById(`qrcode-${key}`), {
-                    text: key,
-                    width: 100,   // Šířka QR kódu v pixelech
-                    height: 100    // Výška QR kódu v pixelech
-                });
+                        li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
+                            <div>
+                                <span class="device-name">${device.name}</span>
+                                <span class="device-status ${statusClass}">${statusText}</span>
+                                <br>
+                                <span class="device-id">ID: ${key}</span> 
+                                <br>
+                                Kdo půjčil: ${device.loanedBy || "-"}<br>
+                                Komu půjčil: ${device.loanedTo || "-"}<br>
+                                Datum zápůjčky: ${device.loanDate || "-"}<br>       
+                                <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
+                                <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+                            </div>
+                            <div id="qrcode-${key}"></div>
+                        </div>`;
+                        list.appendChild(li);
+                        new QRCode(document.getElementById(`qrcode-${key}`), {
+                            text: key,
+                            width: 100,
+                            height: 100
+                        });
+                    });
+                } else {
+                    console.log("Žádná data k zobrazení.");
+                }
+            }).catch((error) => {
+                console.error("Chyba při načítání zařízení:", error);
             });
-        } else {
-            console.log("Žádná data k zobrazení.");
         }
-    }).catch((error) => {
-        console.error("Chyba při načítání zařízení:", error);
-    });
-}
-        
-        //  Funkce pro zvýraznění zařízení
-        function highlightDevice(deviceId) {
-            removeHighlight(); // Nejprve odstraníme zvýraznění ze všech zařízení
 
+        function highlightDevice(deviceId) {
+            removeHighlight();
             const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
             if (deviceElement) {
-                deviceElement.classList.add("highlight"); // Přidáme zvýraznění
-                deviceElement.scrollIntoView({ behavior: "smooth", block: "center" }); // Posun na zařízení
+                deviceElement.classList.add("highlight");
+                deviceElement.scrollIntoView({ behavior: "smooth", block: "center" });
             }
         }
 
-        // Funkce pro odstranění zvýraznění
         function removeHighlight() {
             document.querySelectorAll(".highlight").forEach(el => {
                 el.classList.remove("highlight");
             });
         }
-        // Funkce pro uložení pozice
+
         function saveScrollPosition() {
             sessionStorage.setItem("scrollPosition", window.scrollY);
         }
-        // Funkce pro obnovení pozice
+
         function restoreScrollPosition() {
             const savedPosition = sessionStorage.getItem("scrollPosition");
             if (savedPosition) {
-                window.scrollTo(0, savedPosition); // Posun na uloženou pozici
+                window.scrollTo(0, savedPosition);
             }
         }
-        
-        // Funkce pro půjčení zařízení
+
         window.loanDevice = function(id) {
             saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
@@ -187,14 +162,14 @@ function renderDevices() {
 
                     if (loanedBy && loanedTo) {
                         update(deviceRef, {
-                            name: deviceData.name,  // Uchováme jméno
+                            name: deviceData.name,
                             status: "Půjčeno",
                             loanedBy,
                             loanedTo,
                             loanDate
                         }).then(() => {
                             console.log("Zařízení bylo půjčeno");
-                            renderDevices();                            
+                            renderDevices();
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -205,15 +180,14 @@ function renderDevices() {
             });
         };
 
-        // Funkce pro vrácení zařízení
         window.returnDevice = function(id) {
-             saveScrollPosition();
+            saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
                     const deviceData = snapshot.val();
                     update(deviceRef, {
-                        name: deviceData.name,  // Uchováme jméno
+                        name: deviceData.name,
                         status: "Dostupné",
                         loanedBy: "",
                         loanedTo: "",
@@ -230,12 +204,10 @@ function renderDevices() {
             });
         };
 
-        // Funkce pro spuštění skeneru
         window.startScanner = function() {
             if (scanning) return;
             scanning = true;
             document.getElementById("scannerStatus").innerText = "Spouštím skener...";
-
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
                 videoStream = stream;
                 let video = document.getElementById("video");
@@ -245,32 +217,29 @@ function renderDevices() {
                 document.getElementById("scannerStatus").innerText = "Skenování...";
 
                 function scan() {
-                   if (!scanning) return;
-                   if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                       canvas.width = video.videoWidth;
-                       canvas.height = video.videoHeight;
-                       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                       let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                       let code = jsQR(imageData.data, canvas.width, canvas.height);
-        
-                       if (code) {
-                           console.log("Nalezen QR kód:", code.data);
-                           document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
-                           
-                           //  ZASTAVENÍ KAMERY A SKENERU
-                           scanning = false; // Skener vypneme
-                           if (videoStream) {
-                               videoStream.getTracks().forEach(track => track.stop()); // Vypneme kameru
-                           }
+                    if (!scanning) return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        let code = jsQR(imageData.data, canvas.width, canvas.height);
 
-                           //  Zobrazíme zařízení v seznamu (zvýraznění)
-                           highlightDevice(code.data);
-                       }
-                   }
-                   if (scanning) {
-                       requestAnimationFrame(scan); // Pokračujeme jen, pokud scanning = true
-                   }
-               }
+                        if (code) {
+                            console.log("Nalezen QR kód:", code.data);
+                            document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
+                            scanning = false;
+                            if (videoStream) {
+                                videoStream.getTracks().forEach(track => track.stop());
+                            }
+
+                            highlightDevice(code.data);
+                        }
+                    }
+                    if (scanning) {
+                        requestAnimationFrame(scan);
+                    }
+                }
 
                 scan();
             }).catch(err => {
@@ -278,7 +247,7 @@ function renderDevices() {
                 scanning = false;
             });
         };
-        // funkce pro zastavení skeneru
+
         window.stopScanner = function() {
             scanning = false;
             if (videoStream) {
@@ -287,13 +256,11 @@ function renderDevices() {
             document.getElementById("scannerStatus").innerText = "Skener zastaven.";
             renderDevices();
         };
-        
-        // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
-window.onload = function() {
-    restoreScrollPosition();  // Obnovení pozice
-    renderDevices();  // Vykreslení seznamu zařízení
-};
 
+        window.onload = function() {
+            restoreScrollPosition();
+            renderDevices();
+        };
     </script>
 </body>
 </html>
