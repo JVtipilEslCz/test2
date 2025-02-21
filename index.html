@@ -7,7 +7,41 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: Calibri, sans-serif; }
+        body {
+            font-family: Calibri, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        /* Flexbox pro rozložení zařízení a QR kódu */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        .device-list {
+            flex: 2;
+        }
+
+        .qr-code {
+            flex: 1;
+            text-align: center;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+
+        #video {
+            width: 300px;
+            height: 200px;
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
