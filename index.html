@@ -105,7 +105,24 @@
                 console.error("Chyba při načítání zařízení:", error);
             });
         }
+        //  Funkce pro zvýraznění zařízení
+        function highlightDevice(deviceId) {
+            removeHighlight(); // Nejprve odstraníme zvýraznění ze všech zařízení
 
+            const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
+            if (deviceElement) {
+                deviceElement.classList.add("highlight"); // Přidáme zvýraznění
+                deviceElement.scrollIntoView({ behavior: "smooth", block: "center" }); // Posun na zařízení
+            }
+        }
+
+        // Funkce pro odstranění zvýraznění
+        function removeHighlight() {
+            document.querySelectorAll(".highlight").forEach(el => {
+                el.classList.remove("highlight");
+            });
+        }
+        
         // Funkce pro půjčení zařízení
         window.loanDevice = function(id) {
             const deviceRef = ref(db, 'devices/' + id);
