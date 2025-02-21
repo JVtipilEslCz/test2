@@ -238,6 +238,7 @@
                 videoStream.getTracks().forEach(track => track.stop());
             }
             document.getElementById("scannerStatus").innerText = "Skener zastaven.";
+            renderDevices();
         };
         
         // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
