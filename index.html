@@ -79,17 +79,18 @@
                     Object.keys(devices).forEach((key) => {
                         const device = devices[key];
                         let li = document.createElement("li");
-                        li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
-                            <div>
-                                ${device.name} (${key}) - ${device.status}<br>
-                                Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                Komu půjčil: ${device.loanedTo || "-"}<br>
-                                Datum zápůjčky: ${device.loanDate || "-"}<br>
-                                <button onclick="loanDevice('${key}')">Půjčit</button>
-                                <button onclick="returnDevice('${key}')">Vrátit</button>
-                            </div>
-                            <div id="qrcode-${key}"></div>
-                         </div>`;
+                       li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;" data-device-id="${key}">
+                        <div>
+                               ${device.name} (${key}) - ${device.status}<br>
+                               Kdo půjčil: ${device.loanedBy || "-"}<br>
+                               Komu půjčil: ${device.loanedTo || "-"}<br>
+                               Datum zápůjčky: ${device.loanDate || "-"}<br>
+                               <button onclick="loanDevice('${key}'); removeHighlight();">Půjčit</button>
+                               <button onclick="returnDevice('${key}'); removeHighlight();">Vrátit</button>
+                           </div>
+                           <div id="qrcode-${key}"></div>
+                       </div>`;
+
                         list.appendChild(li);
                         new QRCode(document.getElementById(`qrcode-${key}`), {
                             text: key,
