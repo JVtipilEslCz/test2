@@ -139,16 +139,22 @@
             });
         }
 
-        function saveScrollPosition() {
-            sessionStorage.setItem("scrollPosition", window.scrollY);
-        }
+// Funkce pro uložení pozice při odchodu ze stránky
+window.addEventListener("beforeunload", function() {
+    sessionStorage.setItem("scrollPosition", window.scrollY);
+});
 
-        function restoreScrollPosition() {
-            const savedPosition = sessionStorage.getItem("scrollPosition");
-            if (savedPosition) {
-                window.scrollTo(0, savedPosition);
-            }
+// Funkce pro obnovení pozice po načtení stránky
+window.addEventListener("load", function() {
+    renderDevices();  // Nejprve načteme seznam zařízení
+    setTimeout(() => {
+        const savedPosition = sessionStorage.getItem("scrollPosition");
+        if (savedPosition !== null) {
+            window.scrollTo(0, parseInt(savedPosition, 10)); // Obnovíme posun
         }
+    }, 100); // Krátká prodleva pro správné načtení
+});
+
 
         window.loanDevice = function(id) {
             saveScrollPosition();
@@ -257,21 +263,6 @@
             renderDevices();
         };
 
-// Funkce pro uložení pozice při odchodu ze stránky
-window.addEventListener("beforeunload", function() {
-    sessionStorage.setItem("scrollPosition", window.scrollY);
-});
-
-// Funkce pro obnovení pozice po načtení stránky
-window.addEventListener("load", function() {
-    renderDevices();  // Nejprve načteme seznam zařízení
-    setTimeout(() => {
-        const savedPosition = sessionStorage.getItem("scrollPosition");
-        if (savedPosition !== null) {
-            window.scrollTo(0, parseInt(savedPosition, 10)); // Obnovíme posun
-        }
-    }, 100); // Krátká prodleva pro správné načtení
-});
     </script>
 </body>
 </html>
