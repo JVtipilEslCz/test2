@@ -8,6 +8,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: Calibri, sans-serif; }
+        .highlight {
+            background-color: yellow; /* Podbarvení */
+            transition: background-color 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -75,17 +79,18 @@
                     Object.keys(devices).forEach((key) => {
                         const device = devices[key];
                         let li = document.createElement("li");
-                        li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
-                            <div>
-                                ${device.name} (${key}) - ${device.status}<br>
-                                Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                Komu půjčil: ${device.loanedTo || "-"}<br>
-                                Datum zápůjčky: ${device.loanDate || "-"}<br>
-                                <button onclick="loanDevice('${key}')">Půjčit</button>
-                                <button onclick="returnDevice('${key}')">Vrátit</button>
-                            </div>
-                            <div id="qrcode-${key}"></div>
-                         </div>`;
+                            li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;" data-device-id="${key}">
+                                <div>
+                                    ${device.name} (${key}) - ${device.status}<br>
+                                    Kdo půjčil: ${device.loanedBy || "-"}<br>
+                                    Komu půjčil: ${device.loanedTo || "-"}<br>
+                                    Datum zápůjčky: ${device.loanDate || "-"}<br>
+                                    <button onclick="loanDevice('${key}'); removeHighlight();">Půjčit</button>
+                                    <button onclick="returnDevice('${key}'); removeHighlight();">Vrátit</button>
+                                </div>
+                                <div id="qrcode-${key}"></div>
+                            </div>`;
+
                         list.appendChild(li);
                         new QRCode(document.getElementById(`qrcode-${key}`), {
                             text: key,
@@ -154,7 +159,21 @@
                 console.error("Chyba při načítání zařízení:", error);
             });
         };
+function highlightDevice(deviceId) {
+    removeHighlight(); // Nejprve odstraníme zvýraznění ze všech zařízení
 
+    const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
+    if (deviceElement) {
+        deviceElement.classList.add("highlight"); // Přidáme zvýraznění
+        deviceElement.scrollIntoView({ behavior: "smooth", block: "center" }); // Posun na zařízení
+    }
+}
+function removeHighlight() {
+    document.querySelectorAll(".highlight").forEach(el => {
+        el.classList.remove("highlight");
+    });
+}
+        
         // Funkce pro spuštění skeneru (nebylo měněno)
         window.startScanner = function() {
             if (scanning) return;
@@ -178,16 +197,13 @@
                         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         let code = jsQR(imageData.data, canvas.width, canvas.height);
                         if (code) {
-                            let device = devices.find(d => d.id === code.data);
-                            if (device) {
-                                filteredDevices = [device];
-                                renderDevices();
-                                stopScanner();
-                            }
+                            highlightDevice(code.data); // Zavoláme zvýraznění zařízení
+                            stopScanner();
                         }
                     }
                     requestAnimationFrame(scan);
                 }
+             }
                 scan();
             }).catch(err => {
                 document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
