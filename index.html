@@ -69,6 +69,11 @@
 
     <script>
         // Firebase inicializace a nastavení, jak jsme již probírali
+            <script type="module">
+        // Importování potřebných funkcí z Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+        
         const firebaseConfig = {
             apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",  // Tvůj vlastní apiKey
             authDomain: "test2-c4d26.firebaseapp.com",  // Tvůj vlastní authDomain
