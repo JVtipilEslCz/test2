@@ -140,7 +140,6 @@
         }
 
         window.loanDevice = function(id) {
-            saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -170,7 +169,6 @@
         };
 
         window.returnDevice = function(id) {
-            saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
