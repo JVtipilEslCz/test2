@@ -138,7 +138,6 @@
                 el.classList.remove("highlight");
             });
         }
-
         window.loanDevice = function(id) {
             saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
@@ -245,12 +244,13 @@
             document.getElementById("scannerStatus").innerText = "Skener zastaven.";
             renderDevices();
         };
-// Funkce pro uložení pozice při odchodu ze stránky
+
+// Uložení pozice při odchodu ze stránky
 window.addEventListener("beforeunload", function() {
     sessionStorage.setItem("scrollPosition", window.scrollY);
 });
 
-// Funkce pro obnovení pozice po načtení stránky
+// Obnovení pozice po načtení stránky
 window.addEventListener("load", function() {
     renderDevices();  // Nejprve načteme seznam zařízení
     setTimeout(() => {
@@ -260,6 +260,7 @@ window.addEventListener("load", function() {
         }
     }, 100); // Krátká prodleva pro správné načtení
 });
+
     </script>
 </body>
 </html>
