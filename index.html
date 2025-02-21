@@ -6,12 +6,38 @@
     <title>Evidenční systém půjčovny</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
+   
+    <style> 
         body { font-family: Calibri, sans-serif; }
         .highlight {
             background-color: yellow; /* Podbarvení */
             transition: background-color 0.5s ease-in-out;
         }
+/* Tučný název zařízení */
+.device-name {font-weight: bold; }
+
+/* Zrušení teček v seznamu a posunutí názvu */
+#deviceList {list-style-type: none; padding-left: 0; }
+
+#deviceList li {padding-left: 10px; }
+
+/* Zobrazování ID pod názvem */
+.device-id {font-size: 0.9em; color: #777; }
+
+/* Barevná tlačítka */
+button {width: 120px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
+
+button.loan { background-color: #28a745; color: white; }
+
+button.return { background-color: #dc3545; color: white; }
+
+/* Barevné texty pro stav zařízení */
+.device-status { font-weight: bold; }
+
+.device-status.available { color: green; }
+
+.device-status.loaned { color: red; }
+
     </style>
 </head>
 <body>
@@ -30,7 +56,8 @@
     
     <h2>Seznam zařízení</h2>
     <ul id="deviceList"></ul>
-
+<span class="device-status ${statusClass}">${statusText}</span>
+    
     <!-- Import Firebase SDKs -->
     <script type="module">
         // Importování potřebných funkcí z Firebase SDK
@@ -86,24 +113,24 @@
                     Object.keys(devices).forEach((key) => {
                         const device = devices[key];
                         let li = document.createElement("li");
-                       li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;" data-device-id="${key}">
-                        <div>
-                               ${device.name} (${key}) - ${device.status}<br>
-                               Kdo půjčil: ${device.loanedBy || "-"}<br>
-                               Komu půjčil: ${device.loanedTo || "-"}<br>
-                               Datum zápůjčky: ${device.loanDate || "-"}<br>
-                               <button onclick="loanDevice('${key}'); removeHighlight();">Půjčit</button>
-                               <button onclick="returnDevice('${key}'); removeHighlight();">Vrátit</button>
-                           </div>
-                           <div id="qrcode-${key}"></div>
-                       </div>`;
 
+                        // Přiřazení třídy pro stav zařízení
+                        let statusClass = device.status === "Dostupné" ? "available" : "loaned";
+                        let statusText = device.status === "Dostupné" ? "Dostupné" : "Půjčeno";
+
+                        li.innerHTML = `
+                            <span class="device-name">${device.name}</span>
+                            <br>
+                            <span class="device-id">ID: ${key}</span> 
+                            <br>
+                            <span class="device-status ${statusClass}">${statusText}</span>
+                            <br>
+                            <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
+                            <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+                            <div id="qrcode-${key}"></div>
+                        `;
                         list.appendChild(li);
-                        new QRCode(document.getElementById(`qrcode-${key}`), {
-                            text: key,
-                            width: 80,   // Šířka QR kódu v pixelech
-                            height: 80    // Výška QR kódu v pixelech
-                        });                      
+                        new QRCode(document.getElementById(`qrcode-${key}`), key);
                     });
                 } else {
                     console.log("Žádná data k zobrazení.");
@@ -112,6 +139,7 @@
                 console.error("Chyba při načítání zařízení:", error);
             });
         }
+        
         //  Funkce pro zvýraznění zařízení
         function highlightDevice(deviceId) {
             removeHighlight(); // Nejprve odstraníme zvýraznění ze všech zařízení
