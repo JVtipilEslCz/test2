@@ -7,41 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body {
-            font-family: Calibri, sans-serif;
-            margin: 20px;
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        /* Flexbox pro rozložení zařízení a QR kódu */
-        .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: 20px;
-        }
-
-        .device-list {
-            flex: 2;
-        }
-
-        .qr-code {
-            flex: 1;
-            text-align: center;
-        }
-
-        button {
-            margin-top: 10px;
-        }
-
-        #video {
-            width: 300px;
-            height: 200px;
-            border: 1px solid #ccc;
-        }
+        body { font-family: Calibri, sans-serif; }
     </style>
 </head>
 <body>
@@ -50,30 +16,21 @@
     <button onclick="startScanner()">Spustit skener</button>
     <video id="video" width="300" height="200" autoplay></video>
     <p id="scannerStatus"></p>
+    
+    <h2>Přidat nové zařízení</h2>
+    <input type="text" id="deviceName" placeholder="Název zařízení">
+    <button onclick="addDevice()">Přidat</button>
+    
+    <h2>Seznam zařízení</h2>
+    <ul id="deviceList"></ul>
 
-    <div class="container">
-        <div class="device-list">
-            <h2>Přidat nové zařízení</h2>
-            <input type="text" id="deviceName" placeholder="Název zařízení">
-            <button onclick="addDevice()">Přidat</button>
-
-            <h2>Seznam zařízení</h2>
-            <ul id="deviceList"></ul>
-        </div>
-
-        <div class="qr-code">
-            <h2>QR Kódy</h2>
-            <div id="qrcode-container"></div>
-        </div>
-    </div>
-
-    <script>
-        // Firebase inicializace a nastavení, jak jsme již probírali
-            <script type="module">
+    <!-- Import Firebase SDKs -->
+    <script type="module">
         // Importování potřebných funkcí z Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
         import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
-        
+
+        // Firebase konfigurace (nahraď svou vlastní konfigurací)
         const firebaseConfig = {
             apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",  // Tvůj vlastní apiKey
             authDomain: "test2-c4d26.firebaseapp.com",  // Tvůj vlastní authDomain
@@ -84,50 +41,60 @@
             appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
         };
 
+        // Inicializace Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const devicesRef = ref(db, 'devices');
 
-        let devices = [];
-        let filteredDevices = [];
-        let scanning = false;
-        let videoStream = null;
-
-        function addDevice() {
+        // Funkce pro přidání zařízení
+        window.addDevice = function() {
             const name = document.getElementById("deviceName").value;
             if (!name) return;
+            const newDeviceRef = ref(db, 'devices/' + Date.now());
+            set(newDeviceRef, {
+                name: name,
+                status: "Dostupné",
+                loanedBy: "",
+                loanedTo: "",
+                loanDate: ""
+            }).then(() => {
+                console.log("Zařízení bylo přidáno");
+                renderDevices(); // Překreslí seznam zařízení
+            }).catch((error) => {
+                console.error("Chyba při přidávání zařízení:", error);
+            });
+        };
 
-            const id = "DEV" + Math.floor(Math.random() * 10000);
-            const newDevice = { id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" };
-
-            // Uložení zařízení do Firebase
-            set(ref(db, 'devices/' + id), newDevice)
-                .then(() => {
-                    console.log("Zařízení bylo přidáno");
-                    renderDevices();
-                }).catch((error) => {
-                    console.error("Chyba při přidávání zařízení:", error);
-                });
-        }
-
+        // Funkce pro vykreslení seznamu zařízení
         function renderDevices() {
             const list = document.getElementById("deviceList");
             list.innerHTML = "";
-            filteredDevices.forEach(device => {
-                const li = document.createElement("li");
-                li.innerHTML = `${device.name} (${device.id}) - ${device.status}` +
-                    `<br>Kdo půjčil: ${device.loanedBy || "-"}` +
-                    `<br>Komu půjčil: ${device.loanedTo || "-"}` +
-                    `<br>Datum zápůjčky: ${device.loanDate || "-"}` +
-                    `<br><button onclick="loanDevice('${device.id}')">Půjčit</button>` +
-                    `<button onclick="returnDevice('${device.id}')">Vrátit</button>` +
-                    `<br><div id="qrcode-${device.id}"></div>`;
-                list.appendChild(li);
-                new QRCode(document.getElementById(`qrcode-${device.id}`), device.id);
+            const devicesRef = ref(db, 'devices/');
+            get(devicesRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const devices = snapshot.val();
+                    Object.keys(devices).forEach((key) => {
+                        const device = devices[key];
+                        let li = document.createElement("li");
+                        li.innerHTML = `${device.name} (${key}) - ${device.status}` +
+                            ` <br>Kdo půjčil: ${device.loanedBy || "-"}` +
+                            ` <br>Komu půjčil: ${device.loanedTo || "-"}` +
+                            ` <br>Datum zápůjčky: ${device.loanDate || "-"}` +
+                            ` <br><button onclick="loanDevice('${key}')">Půjčit</button>` +
+                            ` <button onclick="returnDevice('${key}')">Vrátit</button>` +
+                            ` <div id="qrcode-${key}"></div>`;
+                        list.appendChild(li);
+                        new QRCode(document.getElementById(`qrcode-${key}`), key);
+                    });
+                } else {
+                    console.log("Žádná data k zobrazení.");
+                }
+            }).catch((error) => {
+                console.error("Chyba při načítání zařízení:", error);
             });
         }
 
-        function loanDevice(id) {
+        // Funkce pro půjčení zařízení
+        window.loanDevice = function(id) {
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -154,9 +121,10 @@
             }).catch((error) => {
                 console.error("Chyba při načítání zařízení:", error);
             });
-        }
+        };
 
-        function returnDevice(id) {
+        // Funkce pro vrácení zařízení
+        window.returnDevice = function(id) {
             const deviceRef = ref(db, 'devices/' + id);
             get(deviceRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -177,9 +145,10 @@
             }).catch((error) => {
                 console.error("Chyba při načítání zařízení:", error);
             });
-        }
+        };
 
-        function startScanner() {
+        // Funkce pro spuštění skeneru (nebylo měněno)
+        window.startScanner = function() {
             if (scanning) return;
             scanning = true;
             document.getElementById("scannerStatus").innerText = "Spouštím skener...";
@@ -205,8 +174,6 @@
                             if (device) {
                                 filteredDevices = [device];
                                 renderDevices();
-                                // Přesměrování na detail zařízení
-                                window.location.href = `#device-${device.id}`;
                                 stopScanner();
                             }
                         }
@@ -218,25 +185,10 @@
                 document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
                 scanning = false;
             });
-        }
+        };
 
-        function stopScanner() {
-            scanning = false;
-            document.getElementById("scannerStatus").innerText = "Skener zastaven.";
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
-        }
-
-        // Načítání zařízení z Firebase
-        onValue(devicesRef, (snapshot) => {
-            devices = [];
-            snapshot.forEach((childSnapshot) => {
-                devices.push(childSnapshot.val());
-            });
-            filteredDevices = [...devices];
-            renderDevices();
-        });
+        // Zavoláme funkci pro vykreslení seznamu zařízení při načítání stránky
+        renderDevices();
 
     </script>
 </body>
