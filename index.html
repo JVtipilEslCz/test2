@@ -244,14 +244,15 @@
             renderDevices();
         };
 // Uložení pozice při odchodu ze stránky
-window.addEventListener("beforeunload", function() {
+    window.renderDevices = renderDevices; 
+        window.addEventListener("beforeunload", function() {
     sessionStorage.setItem("scrollPosition", window.scrollY);
 });
 
 // Obnovení pozice po načtení stránky
 window.addEventListener("load", function() {
     // Zajistíme, že renderDevices je globálně dostupné
-    window.renderDevices = renderDevices; 
+
 
     renderDevices();  // Nejprve načteme seznam zařízení
 
