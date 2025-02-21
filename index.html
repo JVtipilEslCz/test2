@@ -87,7 +87,11 @@
                             <div id="qrcode-${key}"></div>
                          </div>`;
                         list.appendChild(li);
-                        new QRCode(document.getElementById(`qrcode-${key}`), key);
+                        new QRCode(document.getElementById(`qrcode-${key}`), {
+                            text: key,
+                            width: 80,   // Šířka QR kódu v pixelech
+                            height: 80    // Výška QR kódu v pixelech
+                        });                      
                     });
                 } else {
                     console.log("Žádná data k zobrazení.");
