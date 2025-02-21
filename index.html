@@ -139,23 +139,6 @@
             });
         }
 
-// Funkce pro uložení pozice při odchodu ze stránky
-window.addEventListener("beforeunload", function() {
-    sessionStorage.setItem("scrollPosition", window.scrollY);
-});
-
-// Funkce pro obnovení pozice po načtení stránky
-window.addEventListener("load", function() {
-    renderDevices();  // Nejprve načteme seznam zařízení
-    setTimeout(() => {
-        const savedPosition = sessionStorage.getItem("scrollPosition");
-        if (savedPosition !== null) {
-            window.scrollTo(0, parseInt(savedPosition, 10)); // Obnovíme posun
-        }
-    }, 100); // Krátká prodleva pro správné načtení
-});
-
-
         window.loanDevice = function(id) {
             saveScrollPosition();
             const deviceRef = ref(db, 'devices/' + id);
@@ -262,7 +245,21 @@ window.addEventListener("load", function() {
             document.getElementById("scannerStatus").innerText = "Skener zastaven.";
             renderDevices();
         };
+// Funkce pro uložení pozice při odchodu ze stránky
+window.addEventListener("beforeunload", function() {
+    sessionStorage.setItem("scrollPosition", window.scrollY);
+});
 
+// Funkce pro obnovení pozice po načtení stránky
+window.addEventListener("load", function() {
+    renderDevices();  // Nejprve načteme seznam zařízení
+    setTimeout(() => {
+        const savedPosition = sessionStorage.getItem("scrollPosition");
+        if (savedPosition !== null) {
+            window.scrollTo(0, parseInt(savedPosition, 10)); // Obnovíme posun
+        }
+    }, 100); // Krátká prodleva pro správné načtení
+});
     </script>
 </body>
 </html>
