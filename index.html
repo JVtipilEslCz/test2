@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 		
    
     <style> 
@@ -154,13 +155,10 @@
 
                         li.innerHTML = `
                           <div class="device-container">
-                               <!-- První řádek (název a status) -->
                                <div class="device-header">
                                    <span class="device-name">${device.name}</span>
                                    <span class="device-status ${statusClass}">${statusText}</span>
                                </div>
-        
-                               <!-- Druhý řádek (detaily zařízení) -->
                                <div class="device-details">
                                    <div>
                                        <span class="device-id">ID: ${key}</span>  <br>
@@ -168,12 +166,8 @@
                                        Komu půjčil: ${device.loanedTo || "-"}<br>
                                        Datum zápůjčky: ${device.loanDate || "-"}<br>
                                    </div>
-            
-                                   <!-- QR kód vedle detailů -->
                                    <div id="qrcode-${key}" class="qr-code"></div>
                                </div>
-        
-                               <!-- Tlačítka půjčit a vrátit -->
                                <div class="device-buttons">
                                    <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
                                    <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
@@ -348,52 +342,40 @@ window.ExportDevice = function() {
             const spacing = 10;
             const pageWidth = doc.internal.pageSize.width;
             const pageHeight = doc.internal.pageSize.height;
-
             const keys = Object.keys(devices);
             let processed = 0;
-
             keys.forEach((key) => {
-                const qrContainer = document.createElement("div"); // QR bude tady
-                document.body.appendChild(qrContainer); // Dočasně přidáme do DOM
-
-                new QRCode(qrContainer, {
+                const tempDiv = document.createElement("div");
+                document.body.appendChild(tempDiv);
+                const qr = new QRCode(tempDiv, {
                     text: key,
-                    width: qrSize * 3.78,
-                    height: qrSize * 3.78,
-                    correctLevel: QRCode.CorrectLevel.H
+                    width: 128,
+                    height: 128
                 });
-
-                // Použijeme MutationObserver k zajištění správného vykreslení QR kódu
-                const observer = new MutationObserver(() => {
-                    const canvas = qrContainer.querySelector("canvas");
-                    if (canvas) {
-                        observer.disconnect(); // Přestaneme sledovat změny
-                        const imgData = canvas.toDataURL("image/png");
+                setTimeout(() => {
+                    const img = tempDiv.querySelector("img");
+                    if (img) {
+                        const imgData = img.src;
 
                         doc.text(`ID: ${key}`, x, y);
                         doc.addImage(imgData, "PNG", x, y + 5, qrSize, qrSize);
-
-                        x += qrSize + spacing;
-                        if (x + qrSize > pageWidth - 10) {
-                            x = 10;
-                            y += qrSize + spacing + 10;
-                        }
-                        if (y + qrSize > pageHeight - 10) {
-                            doc.addPage();
-                            x = 10;
-                            y = 10;
-                        }
-
-                        document.body.removeChild(qrContainer); // Uklidíme
-
-                        processed++;
-                        if (processed === keys.length) {
-                            doc.save("QR_kody.pdf");
-                        }
                     }
-                });
-
-                observer.observe(qrContainer, { childList: true, subtree: true });
+                    document.body.removeChild(tempDiv);
+                    x += qrSize + spacing;
+                    if (x + qrSize > pageWidth - 10) {
+                        x = 10;
+                        y += qrSize + spacing + 10;
+                    }
+                    if (y + qrSize > pageHeight - 10) {
+                        doc.addPage();
+                        x = 10;
+                        y = 10;
+                    }
+                    processed++;
+                    if (processed === keys.length) {
+                        doc.save("QR_kody.pdf");
+                    }
+                }, 500); 
             });
         } else {
             alert("Žádná zařízení k exportu.");
@@ -404,12 +386,6 @@ window.ExportDevice = function() {
 };
 
 
-
-
-
-
-
-        // Uložení pozice těsně před refreshem stránky
         window.addEventListener("beforeunload", function() {
             saveScrollPosition();
         });
