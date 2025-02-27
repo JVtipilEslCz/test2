@@ -7,6 +7,8 @@
       <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	   
       <style> 
          body { font-family: Calibri, sans-serif; display: flex; justify-content: center; }
          h1 {text-align: center;}
@@ -58,6 +60,7 @@
          <button onclick="showAddDeviceDialog()" class="manage-device">+</button>
          <button onclick="showDeleteDeviceDialog()" class="manage-device">-</button>
          <button onclick="ExportDevice()" class="manage-device">E</button>
+	 <button onclick="ExportLoanHistory()" class="manage-device">V</button>
          <ul id="deviceList"></ul>
       </div>
 
@@ -65,17 +68,17 @@
         <div class="modal-content">
           <h2>Formulář pro půjčení zařízení</h2>
           <form id="loanForm">
-            <label for="loanedBy">Kdo půjčil:</label>
-            <input type="text" id="loanedBy" required><br><br>
+            <label for="loanedBy">Půjčující:</label>
+            <input type="text" id="loanedBy" placeholder="Zadejte své jméno" required><br><br>
 
-            <label for="loanedTo">Komu půjčil:</label>
-            <input type="text" id="loanedTo" required><br><br>
+            <label for="loanedTo">Zákazník:</label>
+            <input type="text" id="loanedTo" placeholder="Zadejte jméno zákazníka" required><br><br>
 
             <label for="company">Firma:</label>
-            <input type="text" id="company" required><br><br>
+            <input type="text" id="company" placeholder="Zadejte firmu zákazníka" required><br><br>
 
             <label for="phone">Telefon:</label>
-            <input type="text" id="phone" required><br><br>
+            <input type="text" id="phone" placeholder="Zadejte telefon zákazníka" required><br><br>
 
             <button type="submit">Půjčit</button>
             <button type="button" id="cancelLoanButton">Zrušit</button>
@@ -86,7 +89,7 @@
 								
 <script type="module">
          import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
-         import { getDatabase, ref, set, update, get, remove } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+         import { getDatabase, ref, set, update, get, remove, push } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
          
          const firebaseConfig = {
          apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
@@ -119,7 +122,9 @@
          status: "Dostupné",
          loanedBy: "",
          loanedTo: "",
-         loanDate: ""
+         loanDate: "",
+	 company: "",   
+         phone: ""  
          }).then(() => {
          console.log("Zařízení bylo přidáno");
          renderDevices();
@@ -185,8 +190,8 @@
                                  <div class="device-details">
                                      <div>
                                          <span class="device-id">ID: ${key}</span><br>
-                                         Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                         Komu půjčil: ${device.loanedTo || "-"}<br>
+                                         Půjčující: ${device.loanedBy || "-"}<br>
+                                         Zákazník: ${device.loanedTo || "-"}<br>
                                          Datum zápůjčky: ${device.loanDate || "-"}<br>
                                          Firma: ${device.company || "-"}<br> 
                                          Telefon: ${device.phone || "-"}<br>  
@@ -243,11 +248,10 @@
          }, 100); // Krátké zpoždění pro zajištění načtení obsahu
          }
          }
-// Funkce pro zobrazení dialogu při půjčení
-					window.loanDeviceButton = function(id) {
-						openLoanModal(id); // Otevře modální okno s formulářem
-					};
 
+	window.loanDeviceButton = function(id) {
+		openLoanModal(id); // Otevře modální okno s formulářem
+	};
 
 					
 // Funkce pro otevření modálního okna
@@ -269,14 +273,12 @@
 
 	
 // Funkce pro zavření modálního okna
-function closeLoanModal() {
-    const modal = document.getElementById("loanModal");
-    modal.style.display = "none"; // Zavře modální okno
-    document.getElementById("loanForm").reset(); // Vyčistí formulář
-}
-
-// Připojení události na tlačítko "Zrušit"
-document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
+			function closeLoanModal() {
+    		const modal = document.getElementById("loanModal");
+   				 modal.style.display = "none"; // Zavře modální okno
+   				 document.getElementById("loanForm").reset(); // Vyčistí formulář
+			}
+			document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
 
 // Funkce pro půjčení zařízení s novými údaji
         function loanDevice(id, loanedBy, loanedTo, company, phone) {
@@ -286,7 +288,6 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
             if (snapshot.exists()) {
               const deviceData = snapshot.val();
               const loanDate = new Date().toLocaleDateString("cs-CZ");
-
               update(deviceRef, {
                 name: deviceData.name,
                 status: "Půjčeno",
@@ -297,7 +298,22 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
                 phone
               }).then(() => {
                 console.log("Zařízení bylo půjčeno");
-                renderDevices();
+		        const loanHistoryRef = ref(db, 'loanHistory/'); // Odkaz na loanHistory
+		        const newLoanRef = push(loanHistoryRef); // Vytvoření nového záznamu s unikátním ID
+		        set(newLoanRef, {
+		          name: deviceData.name,
+		          loanedBy,
+		          loanedTo,
+		          loanDate,
+		          company,
+		          phone,
+		          returnDate: "" // Na začátku nebude datum vrácení
+		        }).then(() => {
+		          console.log("Půjčení bylo zaznamenáno do historie");
+		        }).catch((error) => {
+		          console.error("Chyba při ukládání do historie půjček:", error);
+		        });
+		renderDevices();
                 restoreScrollPosition();
                 setTimeout(() => highlightDevice(id), 50);
                 closeLoanModal(); // Zavře modální okno po úspěšném půjčení
@@ -326,6 +342,36 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
                          phone: ""   
                      }).then(() => {
                          console.log("Zařízení bylo vráceno");
+			// Nalezení odpovídajícího záznamu v 'loanHistory' pro vrácení zařízení
+			        const loanHistoryRef = ref(db, 'loanHistory/');
+        
+        			// Získání všech záznamů z loanHistory a hledání odpovídajícího záznamu
+			        get(loanHistoryRef).then((snapshot) => {
+			          if (snapshot.exists()) {
+			            const historyData = snapshot.val();
+
+			            // Hledání odpovídajícího záznamu, který má odpovídající zařízení
+			            for (const key in historyData) {
+			              if (historyData[key].name === deviceData.name && historyData[key].loanedTo === deviceData.loanedTo) {
+			                // Přidání data vrácení do příslušného záznamu
+			                const loanEntryRef = ref(db, 'loanHistory/' + key);
+			                const returnDate = new Date().toLocaleDateString("cs-CZ");
+
+			                update(loanEntryRef, {
+			                  returnDate
+			                }).then(() => {
+			                  console.log("Datum vrácení bylo přidáno do historie");
+			                }).catch((error) => {
+			                  console.error("Chyba při aktualizaci historie půjček:", error);
+			                });
+			                break; // Přerušení smyčky po nalezení odpovídajícího záznamu
+			              }
+			            }
+			          }
+			        }).catch((error) => {
+			          console.error("Chyba při získávání historie půjček:", error);
+			        });
+			     
                          renderDevices();
                          restoreScrollPosition();
                          setTimeout(() => highlightDevice(id), 50);
@@ -454,8 +500,40 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
              });
          }
          
-         
-         
+         window.ExportLoanHistory = function() {
+             const loanHistoryRef = ref(db, 'loanHistory/');
+             get(loanHistoryRef).then((snapshot) => {
+                 if (snapshot.exists()) {
+                     const historyData = snapshot.val();
+                     let csvContent = "Zařízení;Půjčující;Zákazník;Půjčeno dne;Firma;Telefon;Vráceno dne\n";
+                     for (const key in historyData) {
+                         const entry = historyData[key];
+                         const name = entry.name || '';
+                         const loanedBy = entry.loanedBy || '';
+                         const loanedTo = entry.loanedTo || '';
+                         const loanDate = entry.loanDate || '';
+                         const company = entry.company || '';
+                         const phone = entry.phone ? `'${entry.phone}` : '';
+                         const returnDate = entry.returnDate || '';
+                         csvContent += `"${name}";"${loanedBy}";"${loanedTo}";"${loanDate}";"${company}";"${phone}";"${returnDate}"\n`;
+                     }
+                     const BOM = "\uFEFF";  
+                     const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+                     const url = URL.createObjectURL(blob);
+                     const a = document.createElement("a");
+                     a.href = url;
+                     a.download = "loan_history.csv";
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                 } else {
+                     console.log('Žádné záznamy v historii půjček.');
+                 }
+             }).catch((error) => {
+                 console.error('Chyba při získávání historie půjček:', error);
+             });
+         }
+        
          window.addEventListener("beforeunload", function() {
          saveScrollPosition();
          });
