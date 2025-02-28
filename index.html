@@ -318,6 +318,7 @@ body.modal-open {
         function openLoanModal(deviceId) {
           const modal = document.getElementById("loanModal");
           modal.style.display = "flex";
+	  document.body.style.overflow = "hidden"; 
           const form = document.getElementById("loanForm");
 
           form.onsubmit = function(event) {
@@ -334,9 +335,10 @@ body.modal-open {
 	
 // Funkce pro zavření modálního okna
 			function closeLoanModal() {
-    		const modal = document.getElementById("loanModal");
-   				 modal.style.display = "none"; // Zavře modální okno
-   				 document.getElementById("loanForm").reset(); // Vyčistí formulář
+    				const modal = document.getElementById("loanModal");
+   				modal.style.display = "none"; // Zavře modální okno
+				document.body.style.overflow = "";
+   				document.getElementById("loanForm").reset(); // Vyčistí formulář
 			}
 			document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
 
