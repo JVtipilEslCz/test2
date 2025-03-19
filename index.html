@@ -158,23 +158,34 @@
          
            const deviceRef = ref(db, 'devices/' + id);
          
-         get(deviceRef).then((snapshot) => {
-         if (snapshot.exists()) {
-         if (confirm(`Opravdu chcete smazat zařízení s ID: ${id}?`)) {
-           remove(deviceRef).then(() => {
-         console.log("Zařízení bylo úspěšně smazáno.");
-           renderDevices(); // Aktualizace seznamu
-         }).catch((error) => {
-         console.error("Chyba při mazání zařízení:", error);
-         });
-         }
-         } else {
-           alert("Zařízení s tímto ID neexistuje.");
-         }
-         }).catch((error) => {
-         console.error("Chyba při načítání zařízení:", error);
-         });
-         };
+             get(deviceRef).then((snapshot) => {
+                     if (snapshot.exists()) {
+                         let newName = prompt("Zadejte nový název zařízení:");
+                         if (newName) {
+                             set(deviceRef, {
+                                 name: newName,
+                                 status: "Dostupné",
+                                 loanedBy: "",
+                                 loanedTo: "",
+                                 loanDate: "",
+                                 company: "",
+                                 phone: ""
+                             }).then(() => {
+                                 console.log("Zařízení bylo úspěšně aktualizováno.");
+                                 renderDevices(); // Aktualizace seznamu
+                             }).catch((error) => {
+                                 console.error("Chyba při aktualizaci zařízení:", error);
+                             });
+                         } else {
+                             alert("Název zařízení nesmí být prázdný.");
+                         }
+                     } else {
+                         alert("Zařízení s tímto ID neexistuje.");
+                     }
+                 }).catch((error) => {
+                     console.error("Chyba při načítání zařízení:", error);
+                 });
+             };
          
          
          
@@ -562,7 +573,7 @@
    	 let scrollTopBtn = document.getElementById("scrollTopBtn");
 
   	  window.addEventListener("scroll", function () {
-  	      if (window.scrollY > 200) {
+  	      if (window.scrollY > 500) {
  	           scrollTopBtn.style.display = "block";
  	       } else {
  	           scrollTopBtn.style.display = "none";
