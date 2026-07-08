@@ -495,8 +495,16 @@
     });
 
     document.getElementById("clearBtn").addEventListener("click", async () => {
-      const ok = window.confirm("Opravdu chceš smazat celou tabulku objednávek?");
-      if (!ok) return;
+      const password = prompt("Pro smazání všech objednávek zadej heslo:");
+
+      // Storno
+      if (password === null) return;
+
+      // Špatné heslo
+      if (password !== "smazat") {
+        showMessage("Nesprávné heslo!", true);
+        return;
+      }
 
       try {
         await remove(ordersRef);
