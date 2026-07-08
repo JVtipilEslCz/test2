@@ -116,7 +116,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
       margin-top: 18px;
     }
@@ -311,6 +311,10 @@
           <strong id="totalPeople">0</strong>
           <span>objednávajících lidí</span>
         </div>
+        <div class="stat">
+          <strong id="totalSold">0</strong>
+          <span>párků celkem prodáno</span>
+        </div>
       </div>
       <p class="toast" id="message"></p>
     </section>
@@ -357,7 +361,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+    import { getDatabase, ref, push, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
@@ -380,10 +384,12 @@
     const ordersBody = document.getElementById("ordersBody");
     const totalHotdogs = document.getElementById("totalHotdogs");
     const totalPeople = document.getElementById("totalPeople");
+    const totalSold = document.getElementById("totalSold");
     const lastUpdate = document.getElementById("lastUpdate");
     const message = document.getElementById("message");
     const qrBox = document.getElementById("qrBox");
     const pageQr = document.getElementById("pageQr");
+    const statsRef = ref(db, "hotdogStats/totalSold");
 
     let qrGenerated = false;
 
@@ -496,37 +502,58 @@
 
     document.getElementById("clearBtn").addEventListener("click", async () => {
       const password = prompt("Pro smazání všech objednávek zadej heslo:");
-
-      // Storno
       if (password === null) return;
 
-      // Špatné heslo
       if (password !== "smazat") {
         showMessage("Nesprávné heslo!", true);
         return;
       }
 
       try {
+        const snapshot = await get(ordersRef);
+        let currentTotal = 0;
+
+        if (snapshot.exists()) {
+          const orders = snapshot.val();
+          Object.values(orders).forEach(order => {
+            currentTotal += Number(order.count || 0);
+          });
+        }
+
+        const statsSnapshot = await get(statsRef);
+        const previousTotal = statsSnapshot.exists()
+          ? Number(statsSnapshot.val() || 0)
+          : 0;
+
+        await set(statsRef, previousTotal + currentTotal);
         await remove(ordersRef);
-        showMessage("Tabulka objednávek byla smazána.");
+
+        showMessage(`Tabulka byla smazána. Do statistik přidáno ${currentTotal} párků.`);
       } catch (error) {
         console.error(error);
-        showMessage("Tabulku se nepodařilo smazat. Zkontroluj Firebase pravidla.", true);
+        showMessage("Tabulku se nepodařilo smazat nebo uložit statistiku. Zkontroluj Firebase pravidla.", true);
       }
     });
 
     document.getElementById("showQrBtn").addEventListener("click", () => {
       qrBox.style.display = qrBox.style.display === "flex" ? "none" : "flex";
+
       if (!qrGenerated) {
         pageQr.innerHTML = "";
         new QRCode(pageQr, {
           text: window.location.href,
           width: 128,
-          height: 128,
-          correctLevel: QRCode.CorrectLevel.M
+          height: 128
         });
         qrGenerated = true;
       }
+    });
+
+    onValue(statsRef, (snapshot) => {
+      totalSold.textContent = snapshot.exists() ? Number(snapshot.val() || 0) : 0;
+    }, (error) => {
+      console.error(error);
+      showMessage("Nepodařilo se načíst statistiku prodaných párků z Firebase.", true);
     });
 
     onValue(ordersRef, (snapshot) => {
