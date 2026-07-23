@@ -114,9 +114,18 @@
       color: #9a3412;
     }
 
+    .secondary.edit-active {
+      background: #15803d;
+      color: white;
+      box-shadow: 0 10px 20px rgba(21, 128, 61, 0.2);
+    }
+
     .danger {
       background: var(--danger);
       color: white;
+    }
+
+    #showQrBtn {
       margin-left: auto;
     }
 
@@ -200,6 +209,17 @@
     tbody tr:last-child td { border-bottom: 0; }
     tbody tr:hover { background: #fff7ed; }
     td.amount { font-weight: 800; font-size: 19px; color: #9a3412; }
+
+    body.edit-mode td.editable-cell {
+      cursor: pointer;
+      background: #f0fdf4;
+      outline: 1px dashed #22c55e;
+      outline-offset: -4px;
+    }
+
+    body.edit-mode td.editable-cell:hover {
+      background: #dcfce7;
+    }
 
     .empty {
       color: var(--muted);
@@ -287,6 +307,7 @@
       .stats { grid-template-columns: 1fr; }
       .panel-header { flex-direction: column; align-items: flex-start; }
       .form-actions { grid-template-columns: 1fr; }
+      #showQrBtn {margin-left: 0;}
     }
   </style>
 </head>
@@ -299,7 +320,8 @@
 	<p></p>
       <div class="actions">
         <button class="primary" id="openOrderBtn">Objednat párky</button>
-        <button class="secondary" id="showQrBtn">Zobrazit QR kód stránky</button>
+        <button class="secondary" id="showQrBtn">QR kód</button>
+        <button class="secondary" id="editBtn" aria-pressed="false">Upravit</button>
         <button class="danger" id="clearBtn">Smazat tabulku</button>
       </div>
 
@@ -370,7 +392,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
-    import { getDatabase, ref, push, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+    import { getDatabase, ref, push, set, get, onValue, remove, runTransaction } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
@@ -400,10 +422,13 @@
     const pageQr = document.getElementById("pageQr");
     const openOrderBtn = document.getElementById("openOrderBtn");
     const submitOrderBtn = orderForm.querySelector('button[type="submit"]');
+    const editBtn = document.getElementById("editBtn");
     const statsRef = ref(db, "hotdogStats/totalSold");
 
     let qrGenerated = false;
     let isSubmitting = false;
+    let isUpdatingOrder = false;
+    let editMode = false;
     let pendingOrderId = null;
     let pendingCreatedAt = null;
 
@@ -438,10 +463,7 @@
     }
 
     function isOrderingClosed(now = new Date()) {
-        const testClosed =
-           new URLSearchParams(window.location.search).get("testClosed") === "1";
-         if (testClosed) return true;
-	const parts = Object.fromEntries(
+      const parts = Object.fromEntries(
         pragueClock.formatToParts(now)
           .filter(part => part.type !== "literal")
           .map(part => [part.type, part.value])
@@ -464,6 +486,14 @@
       }
 
       return closed;
+    }
+
+    function setEditMode(enabled) {
+      editMode = enabled;
+      document.body.classList.toggle("edit-mode", enabled);
+      editBtn.classList.toggle("edit-active", enabled);
+      editBtn.setAttribute("aria-pressed", String(enabled));
+      editBtn.textContent = enabled ? "Ukončit úpravy" : "Upravit";
     }
 
     function formatTime(value) {
@@ -501,8 +531,8 @@
           total += count;
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td>${escapeHtml(order.name || "-")}</td>
-            <td class="amount">${count}</td>
+            <td class="editable-cell" data-order-id="${escapeHtml(order.id)}" data-field="name">${escapeHtml(order.name || "-")}</td>
+            <td class="amount editable-cell" data-order-id="${escapeHtml(order.id)}" data-field="count">${count}</td>
             <td>${formatTime(order.createdAt)}</td>
           `;
           ordersBody.appendChild(row);
@@ -526,6 +556,90 @@
 
     updateOrderButtonState();
     window.setInterval(updateOrderButtonState, 30 * 1000);
+
+    editBtn.addEventListener("click", () => {
+      if (editMode) {
+        setEditMode(false);
+        showMessage("Režim úprav byl vypnut.");
+        return;
+      }
+
+      const password = prompt("Pro úpravu objednávek zadej heslo:");
+      if (password === null) return;
+
+      if (password !== "upravit") {
+        showMessage("Nesprávné heslo!", true);
+        return;
+      }
+
+      setEditMode(true);
+      showMessage("Režim úprav je zapnutý. Dvojklikem upravíš jméno nebo počet párků.");
+    });
+
+    ordersBody.addEventListener("dblclick", async (event) => {
+      if (!editMode || isUpdatingOrder) return;
+
+      const cell = event.target.closest("td.editable-cell");
+      if (!cell || !ordersBody.contains(cell)) return;
+
+      const orderId = cell.dataset.orderId;
+      const field = cell.dataset.field;
+      if (!orderId || !["name", "count"].includes(field)) return;
+
+      const currentValue = cell.textContent.trim();
+      const promptText = field === "name"
+        ? "Zadej nové jméno:"
+        : "Zadej nový počet párků:";
+      const enteredValue = prompt(promptText, currentValue);
+
+      if (enteredValue === null) return;
+
+      let newValue;
+      if (field === "name") {
+        newValue = enteredValue.trim();
+        if (!newValue) {
+          showMessage("Jméno nesmí být prázdné.", true);
+          return;
+        }
+        if (newValue.length > 60) {
+          showMessage("Jméno může mít nejvýše 60 znaků.", true);
+          return;
+        }
+      } else {
+        newValue = Number(enteredValue);
+        if (!Number.isInteger(newValue) || newValue < 1 || newValue > 99) {
+          showMessage("Počet musí být celé číslo od 1 do 99.", true);
+          return;
+        }
+      }
+
+      isUpdatingOrder = true;
+
+      try {
+        const orderRef = ref(db, `hotdogOrders/${orderId}`);
+        const result = await runTransaction(orderRef, currentOrder => {
+          if (currentOrder === null) return;
+          return {
+            ...currentOrder,
+            [field]: newValue
+          };
+        });
+
+        if (!result.committed) {
+          showMessage("Objednávka už neexistuje a nebyla upravena.", true);
+          return;
+        }
+
+        showMessage(field === "name"
+          ? "Jméno bylo upraveno."
+          : "Počet párků byl upraven.");
+      } catch (error) {
+        console.error(error);
+        showMessage("Objednávku se nepodařilo upravit.", true);
+      } finally {
+        isUpdatingOrder = false;
+      }
+    });
 
     orderModal.addEventListener("click", (event) => {
       if (event.target === orderModal) closeModal();
