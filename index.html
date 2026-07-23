@@ -101,6 +101,14 @@
 
     .primary:hover { background: var(--primary-dark); }
 
+    .primary.order-locked,
+    .primary.order-locked:hover {
+      background: #9ca3af;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .secondary {
       background: #ffedd5;
       color: #9a3412;
@@ -390,9 +398,23 @@
     const message = document.getElementById("message");
     const qrBox = document.getElementById("qrBox");
     const pageQr = document.getElementById("pageQr");
+    const openOrderBtn = document.getElementById("openOrderBtn");
+    const submitOrderBtn = orderForm.querySelector('button[type="submit"]');
     const statsRef = ref(db, "hotdogStats/totalSold");
 
     let qrGenerated = false;
+    let isSubmitting = false;
+    let pendingOrderId = null;
+    let pendingCreatedAt = null;
+
+    const ORDERING_CLOSED_MESSAGE = "Příjem objednávek uzavřen, nové objednávky budou příjmány ve středu od 12:00";
+    const pragueClock = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Prague",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23"
+    });
 
     function showMessage(text, isError = false) {
       message.textContent = text;
@@ -411,6 +433,37 @@
       orderModal.classList.remove("open");
       orderModal.setAttribute("aria-hidden", "true");
       orderForm.reset();
+      pendingOrderId = null;
+      pendingCreatedAt = null;
+    }
+
+    function isOrderingClosed(now = new Date()) {
+        const testClosed =
+           new URLSearchParams(window.location.search).get("testClosed") === "1";
+         if (testClosed) return true;
+	const parts = Object.fromEntries(
+        pragueClock.formatToParts(now)
+          .filter(part => part.type !== "literal")
+          .map(part => [part.type, part.value])
+      );
+      const minutes = Number(parts.hour) * 60 + Number(parts.minute);
+
+      return (parts.weekday === "Tue" && minutes >= 12 * 60)
+        || (parts.weekday === "Wed" && minutes < 12 * 60);
+    }
+
+    function updateOrderButtonState() {
+      const closed = isOrderingClosed();
+      openOrderBtn.classList.toggle("order-locked", closed);
+      openOrderBtn.setAttribute("aria-disabled", String(closed));
+      openOrderBtn.textContent = closed ? "Objednávání uzavřeno" : "Objednat párky";
+
+      if (closed && orderModal.classList.contains("open") && !isSubmitting) {
+        closeModal();
+        showMessage(ORDERING_CLOSED_MESSAGE, true);
+      }
+
+      return closed;
     }
 
     function formatTime(value) {
@@ -461,8 +514,18 @@
       lastUpdate.textContent = "Aktualizováno: " + new Date().toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     }
 
-    document.getElementById("openOrderBtn").addEventListener("click", openModal);
+    openOrderBtn.addEventListener("click", () => {
+      if (updateOrderButtonState()) {
+        showMessage(ORDERING_CLOSED_MESSAGE, true);
+        return;
+      }
+
+      openModal();
+    });
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
+
+    updateOrderButtonState();
+    window.setInterval(updateOrderButtonState, 30 * 1000);
 
     orderModal.addEventListener("click", (event) => {
       if (event.target === orderModal) closeModal();
@@ -474,6 +537,16 @@
 
     orderForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      if (isSubmitting) return;
+
+      if (isOrderingClosed()) {
+        closeModal();
+        updateOrderButtonState();
+        showMessage(ORDERING_CLOSED_MESSAGE, true);
+        return;
+      }
+
       const name = nameInput.value.trim();
       const count = Number(countInput.value);
 
@@ -487,17 +560,31 @@
       }
 
       try {
-        const newOrderRef = push(ordersRef);
-        await set(newOrderRef, {
+        if (!pendingOrderId) {
+          pendingOrderId = push(ordersRef).key;
+          pendingCreatedAt = Date.now();
+        }
+
+        const orderRef = ref(db, `hotdogOrders/${pendingOrderId}`);
+
+        isSubmitting = true;
+        submitOrderBtn.disabled = true;
+        submitOrderBtn.textContent = "Ukládám…";
+
+        await set(orderRef, {
           name,
           count,
-          createdAt: Date.now()
+          createdAt: pendingCreatedAt
         });
         closeModal();
         showMessage("Objednávka je uložená.");
       } catch (error) {
         console.error(error);
-        showMessage("Objednávku se nepodařilo uložit. Zkontroluj Firebase pravidla.", true);
+        showMessage("Objednávku se nepodařilo potvrdit. Zkus to znovu.", true);
+      } finally {
+        isSubmitting = false;
+        submitOrderBtn.disabled = false;
+        submitOrderBtn.textContent = "Potvrdit";
       }
     });
 
