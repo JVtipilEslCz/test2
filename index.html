@@ -607,8 +607,8 @@
         }
       } else {
         newValue = Number(enteredValue);
-        if (!Number.isInteger(newValue) || newValue < 1 || newValue > 99) {
-          showMessage("Počet musí být celé číslo od 1 do 99.", true);
+        if (!Number.isInteger(newValue) || newValue < 0 || newValue > 99) {
+          showMessage("Počet musí být celé číslo od 0 do 99.", true);
           return;
         }
       }
@@ -668,8 +668,8 @@
         showMessage("Vyplň jméno.", true);
         return;
       }
-      if (!Number.isInteger(count) || count < 1 || count > 99) {
-        showMessage("Počet musí být celé číslo od 1 do 99.", true);
+      if (!Number.isInteger(count) || count < 0 || count > 99) {
+        showMessage("Počet musí být celé číslo od 0 do 99.", true);
         return;
       }
 
